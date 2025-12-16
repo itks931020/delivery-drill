@@ -1,112 +1,504 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>配達ドリル</title>
-    <style>
-        body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f0f0f0; }
-        .class { background: white; margin: 10px 0; padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .class h3 { margin: 0 0 10px; color: #333; }
-        .label { font-weight: bold; color: #666; }
-        .count { font-size: 2em; color: gold; font-weight: bold; }
-        button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1.2em; }
-        button:hover { background: #45a049; }
-        .total { background: #2196F3; color: white; padding: 20px; border-radius: 10px; text-align: center; margin: 20px 0; }
-        .target { font-size: 1.5em; }
-        .notes { background: #FFEB3B; padding: 15px; border-radius: 10px; margin: 20px 0; }
-        input { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .cash-total { background: #FF5722; color: white; font-size: 1.5em; font-weight: bold; padding: 10px; border-radius: 5px; margin-top: 10px; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>配達ドリルトラッカー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #050816;
+      --card: #141a2b;
+      --accent: #3ba9ff;
+      --accent-soft: #234567;
+      --gold: #ffcc33;
+      --text: #f5f5f5;
+      --muted: #9ca3af;
+      --danger: #f97373;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #182848 0, #050816 55%, #02030a 100%);
+      color: var(--text);
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+    }
+    .sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .dashboard {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .card {
+      background: linear-gradient(135deg, rgba(20,26,43,0.95), rgba(9,12,24,0.98));
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 18px 35px rgba(0,0,0,0.8);
+      border: 1px solid rgba(59,169,255,0.1);
+      backdrop-filter: blur(10px);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 6px;
+    }
+    .label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .big {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .gold {
+      color: var(--gold);
+    }
+    .pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      color: var(--muted);
+    }
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #020617;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-inner {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #3ba9ff, #22c55e);
+      transition: width 0.25s ease-out;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .row > div {
+      flex: 1;
+    }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      padding: 8px 9px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+    input::placeholder {
+      color: #6b7280;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(90deg, #22c55e, #06b6d4);
+      color: white;
+      font-weight: 600;
+      font-size: 13px;
+      box-shadow: 0 8px 18px rgba(16,185,129,0.55);
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 10px rgba(16,185,129,0.45);
+    }
+    .class-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .class-meta {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .status-line {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .status-line span {
+      margin-right: 6px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 60px;
+      padding: 8px 9px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      font-size: 12px;
+      resize: vertical;
+      outline: none;
+    }
+    .danger {
+      color: var(--danger);
+    }
+  </style>
 </head>
 <body>
-    <h1>配達ドリル (12-13時間目標)</h1>
-    
-    <div class="total">
-        <div>合計配送: <span id="totalCount">0</span></div>
-        <div class="target">目標: 12-13時間 (¥1500×2 + ¥1000×6 + ¥600×残りで調整)</div>
-        <div>総額: <span id="totalAmount">¥0</span></div>
+  <h1>配達ドリルトラッカー</h1>
+  <div class="sub">回数でドリルコンプリート → 件数と金額はオマケで伸ばすゲーム</div>
+
+  <!-- トップダッシュボード -->
+  <div class="card">
+    <div class="dashboard">
+      <div style="flex:1;">
+        <div class="label">ドリル進捗</div>
+        <div class="big gold"><span id="totalRuns">0</span> / 35回</div>
+      </div>
+      <div style="width:1px; background:#1e293b;"></div>
+      <div style="flex:1;">
+        <div class="label">総配達件数</div>
+        <div class="big"><span id="totalDeliveries">0</span>件</div>
+      </div>
+    </div>
+    <div class="dashboard" style="margin-top:4px;">
+      <div style="flex:1;">
+        <div class="label">総収益</div>
+        <div class="big">¥<span id="totalAmount">0</span></div>
+      </div>
+      <div style="width:1px; background:#1e293b;"></div>
+      <div style="flex:1;">
+        <div class="label">クエスト+現金</div>
+        <div class="big gold">¥<span id="questCashTotal">0</span></div>
+      </div>
+    </div>
+    <div class="label" style="margin-top:6px;">ドリル達成度</div>
+    <div class="progress-bar">
+      <div id="drillProgress" class="progress-inner"></div>
+    </div>
+  </div>
+
+  <!-- 1500クラス (40分) -->
+  <div class="card" style="margin-top:10px;">
+    <div class="card-header">
+      <div>
+        <div class="class-title">1500クラス</div>
+        <div class="class-meta">
+          <span>金額: 1500円 / 件</span>
+          <span>目標 2回 / 40分/件</span>
+        </div>
+      </div>
+      <div class="pill">クラス進捗: <span id="runs1500">0</span>回</div>
     </div>
 
-    <div class="class">
-        <h3>¥1500 (40分) <span id="count1500">0</span></h3>
-        <button onclick="increment('1500')">+1 (40分)</button>
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <div class="label">件数 (件)</div>
+        <input type="number" id="inputCount1500" placeholder="例: 2" min="1" />
+      </div>
+    </div>
+    <button onclick="addClassRun('1500')">追加</button>
+    <div class="status-line">
+      <span>達成回数: <span id="doneRuns1500">0</span> / 2回</span>
+      <span>実配達件数: <span id="delivered1500">0</span>件</span>
+      <span>クラス合計: ¥<span id="amount1500">0</span></span>
+    </div>
+    <div class="progress-bar">
+      <div id="progress1500" class="progress-inner"></div>
+    </div>
+  </div>
+
+  <!-- 1000クラス (30分) -->
+  <div class="card" style="margin-top:10px;">
+    <div class="card-header">
+      <div>
+        <div class="class-title">1000クラス</div>
+        <div class="class-meta">
+          <span>金額: 1000円 / 件</span>
+          <span>目標 6回 / 30分/件</span>
+        </div>
+      </div>
+      <div class="pill">クラス進捗: <span id="runs1000">0</span>回</div>
     </div>
 
-    <div class="class">
-        <h3>¥1000 (30分) <span id="count1000">0</span></h3>
-        <button onclick="increment('1000')">+1 (30分)</button>
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <div class="label">件数 (件)</div>
+        <input type="number" id="inputCount1000" placeholder="例: 3" min="1" />
+      </div>
+    </div>
+    <button onclick="addClassRun('1000')">追加</button>
+    <div class="status-line">
+      <span>達成回数: <span id="doneRuns1000">0</span> / 6回</span>
+      <span>実配達件数: <span id="delivered1000">0</span>件</span>
+      <span>クラス合計: ¥<span id="amount1000">0</span></span>
+    </div>
+    <div class="progress-bar">
+      <div id="progress1000" class="progress-inner"></div>
+    </div>
+  </div>
+
+  <!-- 600クラス (20分) 残り時間埋め枠 -->
+  <div class="card" style="margin-top:10px;">
+    <div class="card-header">
+      <div>
+        <div class="class-title">600クラス</div>
+        <div class="class-meta">
+          <span>金額: 600円 / 件</span>
+          <span>目標: 残り時間を20分/件で埋める</span>
+        </div>
+      </div>
+      <div class="pill">クラス進捗: <span id="runs600">0</span>回</div>
     </div>
 
-    <div class="class">
-        <h3>¥600 (20分) <span id="count600">0</span></h3>
-        <button onclick="increment('600')">+1 (20分)</button>
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <div class="label">件数 (件)</div>
+        <input type="number" id="inputCount600" placeholder="例: 5" min="1" />
+      </div>
     </div>
-
-    <div class="notes">
-        <h3>クエスト & 今日のメモ & 現金回収</h3>
-        <label>クエスト金額: <input type="number" id="questAmount" placeholder="例: 2000" min="0"></label>
-        <label>現金回収: <input type="number" id="cashAmount" placeholder="例: 500" min="0"></label>
-        <div id="notesTotal" class="cash-total">追加合計: ¥0</div>
+    <button onclick="addClassRun('600')">追加</button>
+    <div class="status-line">
+      <span>推奨回数目安: <span id="suggest600" class="gold">0</span>回</span>
+      <span>実配達件数: <span id="delivered600">0</span>件</span>
+      <span>クラス合計: ¥<span id="amount600">0</span></span>
     </div>
+  </div>
 
-    <script>
-        const classes = {
-            1500: { price: 1500, time: 40, target: 2 },
-            1000: { price: 1000, time: 30, target: 6 },
-            600: { price: 600, time: 20, target: 0 } // 残りで自動調整
-        };
+  <!-- カスタムクラス (そのまま残しておく) -->
+  <div class="card" style="margin-top:10px;">
+    <div class="card-header">
+      <div>
+        <div class="class-title">カスタム</div>
+        <div class="class-meta">
+          <span>金額＆時間が特殊な案件用</span>
+        </div>
+      </div>
+      <div class="pill">回数: <span id="runsCustom">0</span>回</div>
+    </div>
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <div class="label">金額 (円)</div>
+        <input type="number" id="inputCustomAmount" placeholder="例: 2500" min="0" />
+      </div>
+      <div>
+        <div class="label">件数 (件)</div>
+        <input type="number" id="inputCustomCount" placeholder="例: 2" min="1" />
+      </div>
+      <div>
+        <div class="label">時間 (分)</div>
+        <input type="number" id="inputCustomTime" placeholder="例: 45" min="0" />
+      </div>
+    </div>
+    <button onclick="addCustom()">追加</button>
+    <div class="status-line">
+      <span>実配達件数: <span id="deliveredCustom">0</span>件</span>
+      <span>クラス合計: ¥<span id="amountCustom">0</span></span>
+      <span>平均単価: ¥<span id="avgCustom">0</span></span>
+    </div>
+  </div>
 
-        let counts = JSON.parse(localStorage.getItem('deliveryCounts')) || {1500: 0, 1000: 0, 600: 0};
-        let quest = parseInt(localStorage.getItem('questAmount')) || 0;
-        let cash = parseInt(localStorage.getItem('cashAmount')) || 0;
+  <!-- クエスト & 今日のメモ & 現金回収 -->
+  <div class="card" style="margin-top:10px; margin-bottom:16px;">
+    <div class="class-title">クエスト & 今日のメモ & 現金回収</div>
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <div class="label">クエスト金額追加 (円)</div>
+        <input type="number" id="inputQuest" placeholder="例: 1200" min="0" oninput="updateQuestCash()" />
+      </div>
+      <div>
+        <div class="label">現金回収 (円)</div>
+        <input type="number" id="inputCash" placeholder="例: 500" min="0" oninput="updateQuestCash()" />
+      </div>
+    </div>
+    <button onclick="applyQuestCash()">クエスト & 現金を反映</button>
+    <div class="status-line">
+      <span>クエスト: ¥<span id="questOnly">0</span></span>
+      <span>現金回収: ¥<span id="cashOnly">0</span></span>
+      <span class="gold">合計: ¥<span id="questCashPreview">0</span></span>
+    </div>
+    <div class="label" style="margin-top:6px;">今日のメモ（雨 / 休日 / ブースト など）</div>
+    <textarea id="dailyNote" placeholder="例: 雨クエ中 / 夕方からブースト強め など"></textarea>
+  </div>
 
-        function saveData() {
-            localStorage.setItem('deliveryCounts', JSON.stringify(counts));
-            localStorage.setItem('questAmount', quest);
-            localStorage.setItem('cashAmount', cash);
+  <script>
+    const STATE_KEY = "deliveryDrillState_v2";
+
+    const classes = {
+      "1500": { price: 1500, targetRuns: 2, timePer: 40 },
+      "1000": { price: 1000, targetRuns: 6, timePer: 30 },
+      "600":  { price: 600,  targetRuns: 0, timePer: 20 } // 残り時間で計算
+    };
+
+    let state = {
+      runs: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+      delivered: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+      amounts: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+      customTotalTime: 0,
+      quest: 0,
+      cash: 0,
+      note: ""
+    };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STATE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state = Object.assign(state, parsed);
         }
+      } catch (e) {}
+    }
 
-        function updateDisplay() {
-            let totalCount = 0, totalAmount = 0;
-            Object.keys(counts).forEach(key => {
-                document.getElementById(`count${key}`).textContent = counts[key];
-                totalCount += counts[key];
-                totalAmount += counts[key] * classes[key].price;
-            });
-            document.getElementById('totalCount').textContent = totalCount;
-            document.getElementById('totalAmount').textContent = `¥${totalAmount}`;
+    function saveState() {
+      localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    }
 
-            quest = parseInt(document.getElementById('questAmount').value) || 0;
-            cash = parseInt(document.getElementById('cashAmount').value) || 0;
-            const notesTotal = quest + cash;
-            document.getElementById('notesTotal').textContent = `追加合計: ¥${notesTotal}`;
-            saveData();
-        }
+    function calcTotals() {
+      const totalRuns =
+        state.runs["1500"] + state.runs["1000"] + state.runs["600"] + state.runs.custom;
+      const totalDeliveries =
+        state.delivered["1500"] + state.delivered["1000"] +
+        state.delivered["600"] + state.delivered.custom;
+      const totalAmount =
+        state.amounts["1500"] + state.amounts["1000"] +
+        state.amounts["600"] + state.amounts.custom + state.quest + state.cash;
 
-        function increment(cls) {
-            counts[cls]++;
-            // 金色ハイライト (一瞬)
-            const span = document.getElementById(`count${cls}`);
-            span.style.color = 'gold';
-            setTimeout(() => span.style.color = 'gold', 200);
-            updateDisplay();
-        }
+      document.getElementById("totalRuns").textContent = totalRuns;
+      document.getElementById("totalDeliveries").textContent = totalDeliveries;
+      document.getElementById("totalAmount").textContent = totalAmount.toLocaleString();
 
-        // 目標600自動計算 (12時間=720分 or 13時間=780分)
-        function calcTarget600() {
-            const baseTime1500 = counts[1500] * 40;
-            const baseTime1000 = counts[1000] * 30;
-            const targetTime = 750; // 12.5時間平均
-            const remainTime = targetTime - baseTime1500 - baseTime1000;
-            classes[600].target = Math.max(0, Math.floor(remainTime / 20));
-        }
+      const questCashTotal = state.quest + state.cash;
+      document.getElementById("questCashTotal").textContent = questCashTotal.toLocaleString();
 
-        document.getElementById('questAmount').addEventListener('input', updateDisplay);
-        document.getElementById('cashAmount').addEventListener('input', updateDisplay);
+      // ドリル進捗 (35回固定)
+      const drillPercent = Math.min(100, (totalRuns / 35) * 100);
+      document.getElementById("drillProgress").style.width = drillPercent + "%";
 
-        updateDisplay();
-        calcTarget600();
-    </script>
+      // 各クラス
+      ["1500","1000","600"].forEach(key => {
+        document.getElementById("runs" + key).textContent = state.runs[key];
+        document.getElementById("delivered" + key).textContent = state.delivered[key];
+        document.getElementById("amount" + key).textContent = state.amounts[key].toLocaleString();
+      });
+
+      document.getElementById("doneRuns1500").textContent = state.runs["1500"];
+      document.getElementById("doneRuns1000").textContent = state.runs["1000"];
+
+      const p1500 = Math.min(100, (state.runs["1500"] / classes["1500"].targetRuns) * 100);
+      const p1000 = Math.min(100, (state.runs["1000"] / classes["1000"].targetRuns) * 100);
+      document.getElementById("progress1500").style.width = p1500 + "%";
+      document.getElementById("progress1000").style.width = p1000 + "%";
+
+      // 600クラス推奨回数計算（12.5時間=750分）
+      const usedTime =
+        state.delivered["1500"] * classes["1500"].timePer +
+        state.delivered["1000"] * classes["1000"].timePer +
+        state.delivered["600"]  * classes["600"].timePer +
+        state.customTotalTime;
+      const targetTime = 750;
+      const remain = Math.max(0, targetTime - usedTime);
+      const suggest = Math.floor(remain / classes["600"].timePer);
+      document.getElementById("suggest600").textContent = suggest;
+
+      // カスタム
+      document.getElementById("runsCustom").textContent = state.runs.custom;
+      document.getElementById("deliveredCustom").textContent = state.delivered.custom;
+      document.getElementById("amountCustom").textContent = state.amounts.custom.toLocaleString();
+      const avg = state.delivered.custom
+        ? Math.round(state.amounts.custom / state.delivered.custom)
+        : 0;
+      document.getElementById("avgCustom").textContent = avg.toLocaleString();
+
+      // クエスト・現金・メモ
+      document.getElementById("questOnly").textContent = state.quest.toLocaleString();
+      document.getElementById("cashOnly").textContent = state.cash.toLocaleString();
+      document.getElementById("questCashPreview").textContent = questCashTotal.toLocaleString();
+      document.getElementById("dailyNote").value = state.note;
+    }
+
+    function addClassRun(key) {
+      const input = document.getElementById("inputCount" + key);
+      const count = parseInt(input.value || "0", 10);
+      if (!count || count <= 0) return;
+
+      const price = classes[key].price;
+      state.runs[key] += 1;
+      state.delivered[key] += count;
+      state.amounts[key] += price * count;
+
+      input.value = "";
+      flashProgress(key);
+      saveState();
+      calcTotals();
+    }
+
+    function addCustom() {
+      const amount = parseInt(document.getElementById("inputCustomAmount").value || "0", 10);
+      const count = parseInt(document.getElementById("inputCustomCount").value || "0", 10);
+      const time = parseInt(document.getElementById("inputCustomTime").value || "0", 10);
+      if (!amount || !count) return;
+
+      state.runs.custom += 1;
+      state.delivered.custom += count;
+      state.amounts.custom += amount;
+      state.customTotalTime += time;
+
+      document.getElementById("inputCustomAmount").value = "";
+      document.getElementById("inputCustomCount").value = "";
+      document.getElementById("inputCustomTime").value = "";
+      saveState();
+      calcTotals();
+    }
+
+    function updateQuestCash() {
+      const q = parseInt(document.getElementById("inputQuest").value || "0", 10);
+      const c = parseInt(document.getElementById("inputCash").value || "0", 10);
+      document.getElementById("questCashPreview").textContent = (q + c).toLocaleString();
+    }
+
+    function applyQuestCash() {
+      const q = parseInt(document.getElementById("inputQuest").value || "0", 10);
+      const c = parseInt(document.getElementById("inputCash").value || "0", 10);
+      state.quest = q;
+      state.cash = c;
+      saveState();
+      calcTotals();
+    }
+
+    function flashProgress(key) {
+      const el =
+        key === "1500" ? document.getElementById("progress1500")
+        : key === "1000" ? document.getElementById("progress1000")
+        : document.getElementById("suggest600");
+      if (!el) return;
+      const original = el.style.boxShadow;
+      el.style.boxShadow = "0 0 12px rgba(250,204,21,0.8)";
+      setTimeout(() => { el.style.boxShadow = original; }, 220);
+    }
+
+    document.getElementById("dailyNote").addEventListener("input", () => {
+      state.note = document.getElementById("dailyNote").value;
+      saveState();
+    });
+
+    loadState();
+    calcTotals();
+  </script>
 </body>
 </html>

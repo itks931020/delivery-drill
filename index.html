@@ -210,7 +210,7 @@
         <div class="dash-value">¥<span id="cashTotalTop">0</span></div>
       </div>
       <div class="dash-total-row">
-        <div class="dash-label">総売上 (クエスト・現金込み)</div>
+        <div class="dash-label">総売上 (クエスト込み・現金除外)</div>
         <div class="dash-value">¥<span id="totalAmount">0</span></div>
       </div>
     </div>
@@ -454,7 +454,7 @@
   </div>
 
   <script>
-    const STATE_KEY = "deliveryDrillState_v6";
+    const STATE_KEY = "deliveryDrillState_v7";
 
     let state = {
       runs:      { "1500": 0, "1000": 0, "600": 0, custom: 0 },
@@ -486,7 +486,7 @@
       const totalClassAmount =
         state.amounts["1500"] + state.amounts["1000"] +
         state.amounts["600"] + state.amounts.custom;
-      const totalAmount = totalClassAmount + state.quest + state.cash;
+      const totalAmount = totalClassAmount + state.quest; // 現金は含めない
 
       document.getElementById("totalRuns").textContent = totalRuns;
       document.getElementById("totalDeliveries").textContent = totalDeliveries;
@@ -559,13 +559,13 @@
       if (!amount || amount < 0) return;
 
       state.runs[key]      += 1;
-      state.delivered[key] += count;       // 件数だけ
-      state.amounts[key]   += amount;      // 金額は入力そのもの
+      state.delivered[key] += count;
+      state.amounts[key]   += amount;
       if (time && time > 0) {
-        state.times[key] += time;          // 時間も入力そのもの
+        state.times[key] += time;
       }
       if (cash && cash > 0) {
-        state.cash += cash;                // 現金回収は全体cashへ
+        state.cash += cash; // 現金回収は合計cashのみ
       }
 
       amountInput.value = "";
@@ -581,6 +581,7 @@
       const time   = parseInt(document.getElementById("inputCustomTime").value   || "0", 10);
       const cash   = parseInt(document.getElementById("inputCustomCash").value   || "0", 10);
       const count  = parseInt(document.getElementById("inputCustomCount").value  || "0", 10);
+
       if (!count || count <= 0) return;
       if (!amount || amount < 0) return;
 

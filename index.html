@@ -113,7 +113,7 @@
     }
     .row > div { flex: 1; }
 
-    input[type="number"], select, textarea {
+    input[type="text"], select, textarea {
       width: 100%;
       padding: 8px 9px;
       border-radius: 10px;
@@ -184,8 +184,61 @@
       background: linear-gradient(90deg, #f97316, #facc15);
       box-shadow: 0 8px 18px rgba(249,115,22,0.55);
     }
+
+    /* ===== 追加：配達済みリスト ===== */
+    .btn-delivered {
+      background: linear-gradient(90deg, #64748b, #334155);
+      box-shadow: 0 8px 18px rgba(100,116,139,0.35);
+    }
+    .runlist {
+      margin-top: 8px;
+      display: none;
+      border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 12px;
+      padding: 8px;
+      background: rgba(2,6,23,0.35);
+    }
+    .run-item {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 12px;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: rgba(15,23,42,0.65);
+    }
+    .run-item:last-child { margin-bottom: 0; }
+    .run-item .mini {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .run-item .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0,1fr));
+      gap: 6px;
+    }
+    .run-item .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .run-item .actions button {
+      margin-top: 0;
+      padding: 7px;
+      font-size: 12px;
+    }
+    .btn-save {
+      background: linear-gradient(90deg, #22c55e, #06b6d4);
+    }
+    .btn-del {
+      background: linear-gradient(90deg, #ef4444, #f97316);
+      box-shadow: 0 8px 18px rgba(239,68,68,0.4);
+    }
   </style>
 </head>
+
 <body>
   <h1>配達ドリルトラッカー</h1>
   <div class="sub">クラスはあくまで目安。金額・時間・件数は毎回手打ちで記録していく。</div>
@@ -220,52 +273,61 @@
     </div>
   </div>
 
-  <!-- 1500円クラス -->
+  <!-- ★順番変更：600円クラス → 1000円クラス → 1500円クラス -->
+
+  <!-- 600円クラス -->
   <div class="card" style="margin-top:10px;">
     <div class="card-header">
       <div>
-        <div class="class-title">1500円クラス</div>
+        <div class="class-title">600円クラス</div>
         <div class="class-meta">
-          <span>目安: 1500円 / 40分 / 件</span>
-          <span>目標 2回 (クラスドリル)</span>
+          <span>目安: 600円 / 20分 / 件</span>
+          <span>残り時間をこのクラスで埋める</span>
         </div>
       </div>
-      <div class="pill">クラス進捗: <span id="runs1500">0</span>回</div>
+      <div class="pill">クラス進捗: <span id="runs600">0</span>回</div>
     </div>
 
     <div class="row" style="margin-top:6px;">
       <div>
         <div class="label">金額 (円)</div>
-        <input type="number" id="inputAmount1500" placeholder="例: 1640" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount600" placeholder="例: 620" />
       </div>
       <div>
         <div class="label">時間 (分)</div>
-        <input type="number" id="inputTime1500" placeholder="例: 40" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTime600" placeholder="例: 20" />
       </div>
       <div>
         <div class="label">現金回収 (円)</div>
-        <input type="number" id="inputCash1500" placeholder="例: 200" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCash600" placeholder="例: 100" />
       </div>
       <div>
         <div class="label">件数 (件)</div>
-        <select id="inputCount1500">
-          <option value="1">1</option>
-          <option value="2" selected>2</option>
+        <select id="inputCount600">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
           <option value="3">3</option>
           <option value="4">4</option>
           <option value="5">5</option>
         </select>
       </div>
     </div>
-    <button onclick="addClassRun('1500')">追加</button>
+
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn-delivered" onclick="toggleRunList('600')">配達済み</button>
+      <button onclick="addClassRun('600')">追加</button>
+    </div>
+    <div id="runList600" class="runlist"></div>
+
     <div class="status-line">
-      <span>達成回数: <span id="doneRuns1500">0</span> / 2回</span>
-      <span>実配達件数: <span id="delivered1500">0</span>件</span>
-      <span>クラス合計: ¥<span id="amount1500">0</span></span>
-      <span>時間合計: <span id="time1500">0</span>分</span>
+      <span>達成回数: <span id="doneRuns600">0</span> / 30回</span>
+      <span>実配達件数: <span id="delivered600">0</span>件</span>
+      <span>クラス合計: ¥<span id="amount600">0</span></span>
+      <span>時間合計: <span id="time600">0</span>分</span>
+      <span>推奨回数目安: <span id="suggest600" style="color:var(--gold);">0</span>回</span>
     </div>
     <div class="progress-bar">
-      <div id="progress1500" class="progress-inner"></div>
+      <div id="progress600" class="progress-inner"></div>
     </div>
   </div>
 
@@ -285,15 +347,15 @@
     <div class="row" style="margin-top:6px;">
       <div>
         <div class="label">金額 (円)</div>
-        <input type="number" id="inputAmount1000" placeholder="例: 1050" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount1000" placeholder="例: 1050" />
       </div>
       <div>
         <div class="label">時間 (分)</div>
-        <input type="number" id="inputTime1000" placeholder="例: 30" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTime1000" placeholder="例: 30" />
       </div>
       <div>
         <div class="label">現金回収 (円)</div>
-        <input type="number" id="inputCash1000" placeholder="例: 150" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCash1000" placeholder="例: 150" />
       </div>
       <div>
         <div class="label">件数 (件)</div>
@@ -306,7 +368,13 @@
         </select>
       </div>
     </div>
-    <button onclick="addClassRun('1000')">追加</button>
+
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn-delivered" onclick="toggleRunList('1000')">配達済み</button>
+      <button onclick="addClassRun('1000')">追加</button>
+    </div>
+    <div id="runList1000" class="runlist"></div>
+
     <div class="status-line">
       <span>達成回数: <span id="doneRuns1000">0</span> / 6回</span>
       <span>実配達件数: <span id="delivered1000">0</span>件</span>
@@ -318,53 +386,58 @@
     </div>
   </div>
 
-  <!-- 600円クラス -->
+  <!-- 1500円クラス -->
   <div class="card" style="margin-top:10px;">
     <div class="card-header">
       <div>
-        <div class="class-title">600円クラス</div>
+        <div class="class-title">1500円クラス</div>
         <div class="class-meta">
-          <span>目安: 600円 / 20分 / 件</span>
-          <span>残り時間をこのクラスで埋める</span>
+          <span>目安: 1500円 / 40分 / 件</span>
+          <span>目標 2回 (クラスドリル)</span>
         </div>
       </div>
-      <div class="pill">クラス進捗: <span id="runs600">0</span>回</div>
+      <div class="pill">クラス進捗: <span id="runs1500">0</span>回</div>
     </div>
 
     <div class="row" style="margin-top:6px;">
       <div>
         <div class="label">金額 (円)</div>
-        <input type="number" id="inputAmount600" placeholder="例: 620" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount1500" placeholder="例: 1640" />
       </div>
       <div>
         <div class="label">時間 (分)</div>
-        <input type="number" id="inputTime600" placeholder="例: 20" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTime1500" placeholder="例: 40" />
       </div>
       <div>
         <div class="label">現金回収 (円)</div>
-        <input type="number" id="inputCash600" placeholder="例: 100" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCash1500" placeholder="例: 200" />
       </div>
       <div>
         <div class="label">件数 (件)</div>
-        <select id="inputCount600">
-          <option value="1" selected>1</option>
-          <option value="2">2</option>
+        <select id="inputCount1500">
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
           <option value="3">3</option>
           <option value="4">4</option>
           <option value="5">5</option>
         </select>
       </div>
     </div>
-    <button onclick="addClassRun('600')">追加</button>
+
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn-delivered" onclick="toggleRunList('1500')">配達済み</button>
+      <button onclick="addClassRun('1500')">追加</button>
+    </div>
+    <div id="runList1500" class="runlist"></div>
+
     <div class="status-line">
-      <span>達成回数: <span id="doneRuns600">0</span> / 30回</span>
-      <span>実配達件数: <span id="delivered600">0</span>件</span>
-      <span>クラス合計: ¥<span id="amount600">0</span></span>
-      <span>時間合計: <span id="time600">0</span>分</span>
-      <span>推奨回数目安: <span id="suggest600" style="color:var(--gold);">0</span>回</span>
+      <span>達成回数: <span id="doneRuns1500">0</span> / 2回</span>
+      <span>実配達件数: <span id="delivered1500">0</span>件</span>
+      <span>クラス合計: ¥<span id="amount1500">0</span></span>
+      <span>時間合計: <span id="time1500">0</span>分</span>
     </div>
     <div class="progress-bar">
-      <div id="progress600" class="progress-inner"></div>
+      <div id="progress1500" class="progress-inner"></div>
     </div>
   </div>
 
@@ -382,15 +455,15 @@
     <div class="row" style="margin-top:6px;">
       <div>
         <div class="label">金額 (円)</div>
-        <input type="number" id="inputCustomAmount" placeholder="例: 2500" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCustomAmount" placeholder="例: 2500" />
       </div>
       <div>
         <div class="label">時間 (分)</div>
-        <input type="number" id="inputCustomTime" placeholder="例: 45" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCustomTime" placeholder="例: 45" />
       </div>
       <div>
         <div class="label">現金回収 (円)</div>
-        <input type="number" id="inputCustomCash" placeholder="例: 300" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCustomCash" placeholder="例: 300" />
       </div>
       <div>
         <div class="label">件数 (件)</div>
@@ -403,7 +476,13 @@
         </select>
       </div>
     </div>
-    <button onclick="addCustom()">追加</button>
+
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn-delivered" onclick="toggleRunList('custom')">配達済み</button>
+      <button onclick="addCustom()">追加</button>
+    </div>
+    <div id="runListcustom" class="runlist"></div>
+
     <div class="status-line">
       <span>実配達件数: <span id="deliveredCustom">0</span>件</span>
       <span>クラス合計: ¥<span id="amountCustom">0</span></span>
@@ -418,11 +497,11 @@
     <div class="row" style="margin-top:6px;">
       <div>
         <div class="label">クエスト金額 (円)</div>
-        <input type="number" id="inputQuest" placeholder="例: 1200" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputQuest" placeholder="例: 1200" />
       </div>
       <div>
         <div class="label">現金回収 (円)</div>
-        <input type="number" id="inputCash" placeholder="例: 500" min="0" />
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCash" placeholder="例: 500" />
       </div>
     </div>
     <div class="btn-row">
@@ -454,22 +533,30 @@
   </div>
 
   <script>
-    const STATE_KEY = "deliveryDrillState_v7";
+    const STATE_KEY = "deliveryDrillState_v8";
+
+    // iPhone対策：type=numberを避け、text+inputmode前提で数字化
+    const num = (v) => {
+      const s = (v ?? "").toString().replace(/[^\d-]/g, "");
+      const n = parseInt(s || "0", 10);
+      return Number.isFinite(n) ? n : 0;
+    };
 
     let state = {
-      runs:      { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-      delivered: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-      amounts:   { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-      times:     { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+      runsLog: [], // 案件ログ（編集/削除の元）
       quest: 0,
       cash:  0,
       note:  ""
     };
 
+    const el = (id) => document.getElementById(id);
+    const uid = () => "r_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+
     function loadState() {
       try {
         const raw = localStorage.getItem(STATE_KEY);
         if (raw) state = Object.assign(state, JSON.parse(raw));
+        if (!Array.isArray(state.runsLog)) state.runsLog = [];
       } catch(e) {}
     }
 
@@ -477,179 +564,281 @@
       localStorage.setItem(STATE_KEY, JSON.stringify(state));
     }
 
+    function aggregateFromLog() {
+      const agg = {
+        runs:      { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+        delivered: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+        amounts:   { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+        times:     { "1500": 0, "1000": 0, "600": 0, custom: 0 }
+      };
+
+      for (const r of state.runsLog) {
+        const k = r.key;
+        if (!(k in agg.runs)) continue;
+        agg.runs[k] += 1;
+        agg.delivered[k] += (r.count || 0);
+        agg.amounts[k] += (r.amount || 0);
+        agg.times[k] += (r.time || 0);
+      }
+      return agg;
+    }
+
     function calcTotals() {
+      const a = aggregateFromLog();
+
       const totalRuns =
-        state.runs["1500"] + state.runs["1000"] + state.runs["600"] + state.runs.custom;
+        a.runs["1500"] + a.runs["1000"] + a.runs["600"] + a.runs.custom;
+
       const totalDeliveries =
-        state.delivered["1500"] + state.delivered["1000"] +
-        state.delivered["600"] + state.delivered.custom;
+        a.delivered["1500"] + a.delivered["1000"] + a.delivered["600"] + a.delivered.custom;
+
       const totalClassAmount =
-        state.amounts["1500"] + state.amounts["1000"] +
-        state.amounts["600"] + state.amounts.custom;
-      const totalAmount = totalClassAmount + state.quest; // 現金は含めない
+        a.amounts["1500"] + a.amounts["1000"] + a.amounts["600"] + a.amounts.custom;
 
-      document.getElementById("totalRuns").textContent = totalRuns;
-      document.getElementById("totalDeliveries").textContent = totalDeliveries;
-      document.getElementById("totalAmount").textContent = totalAmount.toLocaleString();
+      const totalAmount = totalClassAmount + (state.quest || 0); // 現金は含めない
 
-      document.getElementById("questTotalTop").textContent = state.quest.toLocaleString();
-      document.getElementById("cashTotalTop").textContent  = state.cash.toLocaleString();
+      el("totalRuns").textContent = totalRuns.toString();
+      el("totalDeliveries").textContent = totalDeliveries.toString();
+      el("totalAmount").textContent = totalAmount.toLocaleString();
+
+      el("questTotalTop").textContent = (state.quest || 0).toLocaleString();
+      el("cashTotalTop").textContent  = (state.cash  || 0).toLocaleString();
 
       const drillPercent = Math.min(100, (totalRuns / 35) * 100);
-      document.getElementById("drillProgress").style.width = drillPercent + "%";
+      el("drillProgress").style.width = drillPercent + "%";
 
-      document.getElementById("runs1500").textContent = state.runs["1500"];
-      document.getElementById("runs1000").textContent = state.runs["1000"];
-      document.getElementById("runs600").textContent  = state.runs["600"];
-      document.getElementById("runsCustom").textContent = state.runs.custom;
+      el("runs1500").textContent = a.runs["1500"].toString();
+      el("runs1000").textContent = a.runs["1000"].toString();
+      el("runs600").textContent  = a.runs["600"].toString();
+      el("runsCustom").textContent = a.runs.custom.toString();
 
-      document.getElementById("doneRuns1500").textContent = state.runs["1500"];
-      document.getElementById("doneRuns1000").textContent = state.runs["1000"];
-      document.getElementById("doneRuns600").textContent  = state.runs["600"];
+      el("doneRuns1500").textContent = a.runs["1500"].toString();
+      el("doneRuns1000").textContent = a.runs["1000"].toString();
+      el("doneRuns600").textContent  = a.runs["600"].toString();
 
-      ["1500","1000","600","custom"].forEach(k => {
-        const delEl  = document.getElementById("delivered" + k);
-        const amtEl  = document.getElementById("amount" + k);
-        const timeEl = document.getElementById("time" + k);
-        if (delEl)  delEl.textContent  = state.delivered[k].toString();
-        if (amtEl)  amtEl.textContent  = state.amounts[k].toLocaleString();
-        if (timeEl) timeEl.textContent = state.times[k].toString();
+      ["1500","1000","600"].forEach(k => {
+        el("delivered" + k).textContent = a.delivered[k].toString();
+        el("amount" + k).textContent = a.amounts[k].toLocaleString();
+        el("time" + k).textContent = a.times[k].toString();
       });
 
-      const p1500 = Math.min(100, (state.runs["1500"] / 2) * 100);
-      const p1000 = Math.min(100, (state.runs["1000"] / 6) * 100);
-      const p600  = Math.min(100, (state.runs["600"]  / 30) * 100);
-      document.getElementById("progress1500").style.width = p1500 + "%";
-      document.getElementById("progress1000").style.width = p1000 + "%";
-      document.getElementById("progress600").style.width  = p600 + "%";
+      el("deliveredCustom").textContent = a.delivered.custom.toString();
+      el("amountCustom").textContent    = a.amounts.custom.toLocaleString();
+      el("timeCustom").textContent      = a.times.custom.toString();
 
-      const usedTime =
-        state.times["1500"] + state.times["1000"] +
-        state.times["600"] + state.times.custom;
+      const p1500 = Math.min(100, (a.runs["1500"] / 2) * 100);
+      const p1000 = Math.min(100, (a.runs["1000"] / 6) * 100);
+      const p600  = Math.min(100, (a.runs["600"]  / 30) * 100);
+      el("progress1500").style.width = p1500 + "%";
+      el("progress1000").style.width = p1000 + "%";
+      el("progress600").style.width  = p600 + "%";
+
+      const usedTime = a.times["1500"] + a.times["1000"] + a.times["600"] + a.times.custom;
       const targetTime = 750; // 12.5時間
       const remain = Math.max(0, targetTime - usedTime);
-      const suggest = Math.floor(remain / 20); // 600クラス20分目安
-      document.getElementById("suggest600").textContent = suggest;
+      const suggest = Math.floor(remain / 20);
+      el("suggest600").textContent = suggest.toString();
 
-      document.getElementById("deliveredCustom").textContent = state.delivered.custom.toString();
-      document.getElementById("amountCustom").textContent    = state.amounts.custom.toLocaleString();
-      document.getElementById("timeCustom").textContent      = state.times.custom.toString();
-      const avg = state.delivered.custom
-        ? Math.round(state.amounts.custom / state.delivered.custom)
-        : 0;
-      document.getElementById("avgCustom").textContent = avg.toLocaleString();
+      const avg = a.delivered.custom ? Math.round(a.amounts.custom / a.delivered.custom) : 0;
+      el("avgCustom").textContent = avg.toLocaleString();
 
-      document.getElementById("questOnly").textContent = state.quest.toLocaleString();
-      document.getElementById("cashOnly").textContent  = state.cash.toLocaleString();
-      document.getElementById("dailyNote").value       = state.note;
+      el("questOnly").textContent = (state.quest || 0).toLocaleString();
+      el("cashOnly").textContent  = (state.cash  || 0).toLocaleString();
+      el("dailyNote").value       = state.note || "";
+
+      ["600","1000","1500","custom"].forEach(renderRunListIfOpen);
     }
 
     function addClassRun(key) {
-      const amountInput = document.getElementById("inputAmount" + key);
-      const timeInput   = document.getElementById("inputTime" + key);
-      const cashInput   = document.getElementById("inputCash" + key);
-      const countSelect = document.getElementById("inputCount" + key);
+      const amount = num(el("inputAmount" + key).value);
+      const time   = num(el("inputTime" + key).value);
+      const cash   = num(el("inputCash" + key).value);
+      const count  = num(el("inputCount" + key).value);
 
-      const amount = parseInt(amountInput.value || "0", 10);
-      const time   = parseInt(timeInput.value   || "0", 10);
-      const cash   = parseInt(cashInput.value   || "0", 10);
-      const count  = parseInt(countSelect.value || "0", 10);
+      if (count <= 0) return;
+      if (amount <= 0) return;
 
-      if (!count || count <= 0) return;
-      if (!amount || amount < 0) return;
+      state.runsLog.push({
+        id: uid(),
+        key,
+        amount,
+        time,
+        cash,
+        count,
+        ts: Date.now()
+      });
 
-      state.runs[key]      += 1;
-      state.delivered[key] += count;
-      state.amounts[key]   += amount;
-      if (time && time > 0) {
-        state.times[key] += time;
-      }
-      if (cash && cash > 0) {
-        state.cash += cash; // 現金回収は合計cashのみ
-      }
+      if (cash > 0) state.cash += cash;
 
-      amountInput.value = "";
-      timeInput.value   = "";
-      cashInput.value   = "";
-      flashKey(key);
+      el("inputAmount" + key).value = "";
+      el("inputTime" + key).value   = "";
+      el("inputCash" + key).value   = "";
+
       saveState();
       calcTotals();
     }
 
     function addCustom() {
-      const amount = parseInt(document.getElementById("inputCustomAmount").value || "0", 10);
-      const time   = parseInt(document.getElementById("inputCustomTime").value   || "0", 10);
-      const cash   = parseInt(document.getElementById("inputCustomCash").value   || "0", 10);
-      const count  = parseInt(document.getElementById("inputCustomCount").value  || "0", 10);
+      const amount = num(el("inputCustomAmount").value);
+      const time   = num(el("inputCustomTime").value);
+      const cash   = num(el("inputCustomCash").value);
+      const count  = num(el("inputCustomCount").value);
 
-      if (!count || count <= 0) return;
-      if (!amount || amount < 0) return;
+      if (count <= 0) return;
+      if (amount <= 0) return;
 
-      state.runs.custom      += 1;
-      state.delivered.custom += count;
-      state.amounts.custom   += amount;
-      if (time && time > 0) {
-        state.times.custom += time;
-      }
-      if (cash && cash > 0) {
-        state.cash += cash;
-      }
+      state.runsLog.push({
+        id: uid(),
+        key: "custom",
+        amount,
+        time,
+        cash,
+        count,
+        ts: Date.now()
+      });
 
-      document.getElementById("inputCustomAmount").value = "";
-      document.getElementById("inputCustomTime").value   = "";
-      document.getElementById("inputCustomCash").value   = "";
-      flashKey("Custom");
+      if (cash > 0) state.cash += cash;
+
+      el("inputCustomAmount").value = "";
+      el("inputCustomTime").value   = "";
+      el("inputCustomCash").value   = "";
+
       saveState();
       calcTotals();
     }
 
     function addQuest() {
-      const q = parseInt(document.getElementById("inputQuest").value || "0", 10);
-      if (!q || q <= 0) return;
+      const q = num(el("inputQuest").value);
+      if (q <= 0) return;
       state.quest += q;
-      document.getElementById("inputQuest").value = "";
+      el("inputQuest").value = "";
       saveState();
       calcTotals();
     }
 
     function addCash() {
-      const c = parseInt(document.getElementById("inputCash").value || "0", 10);
-      if (!c || c <= 0) return;
+      const c = num(el("inputCash").value);
+      if (c <= 0) return;
       state.cash += c;
-      document.getElementById("inputCash").value = "";
+      el("inputCash").value = "";
       saveState();
       calcTotals();
     }
 
     function resetAll() {
       if (!confirm("本当に今日の記録を全部リセットしますか？")) return;
-      state = {
-        runs:      { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-        delivered: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-        amounts:   { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-        times:     { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-        quest: 0,
-        cash:  0,
-        note:  ""
-      };
+      state = { runsLog: [], quest: 0, cash: 0, note: "" };
       saveState();
       calcTotals();
     }
 
-    function flashKey(key) {
-      const el =
-        key === "1500" ? document.getElementById("progress1500")
-        : key === "1000" ? document.getElementById("progress1000")
-        : key === "600"  ? document.getElementById("progress600")
-        : document.getElementById("runsCustom");
-      if (!el) return;
-      const original = el.style.boxShadow;
-      el.style.boxShadow = "0 0 12px rgba(250,204,21,0.8)";
-      setTimeout(() => { el.style.boxShadow = original; }, 220);
+    // ===== 配達済みリスト =====
+    function toggleRunList(key) {
+      const box = el("runList" + key);
+      if (!box) return;
+      const now = box.style.display === "block";
+      box.style.display = now ? "none" : "block";
+      if (!now) renderRunList(key);
     }
 
-    document.getElementById("dailyNote").addEventListener("input", () => {
-      state.note = document.getElementById("dailyNote").value;
+    function renderRunListIfOpen(key) {
+      const box = el("runList" + key);
+      if (!box) return;
+      if (box.style.display === "block") renderRunList(key);
+    }
+
+    function renderRunList(key) {
+      const box = el("runList" + key);
+      if (!box) return;
+
+      const list = state.runsLog
+        .filter(r => r.key === key)
+        .sort((a,b) => (b.ts || 0) - (a.ts || 0));
+
+      if (list.length === 0) {
+        box.innerHTML = `<div class="label">まだこのクラスの配達記録はありません。</div>`;
+        return;
+      }
+
+      box.innerHTML = list.map(r => {
+        const d = new Date(r.ts || Date.now());
+        const stamp = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+        return `
+          <div class="run-item" data-id="${r.id}">
+            <div class="mini">
+              <span>${stamp}</span>
+              <span>ID: ${r.id.slice(-6)}</span>
+            </div>
+
+            <div class="grid">
+              <div>
+                <div class="label">金額</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.amount || 0}" data-f="amount" />
+              </div>
+              <div>
+                <div class="label">時間(分)</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.time || 0}" data-f="time" />
+              </div>
+              <div>
+                <div class="label">現金</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.cash || 0}" data-f="cash" />
+              </div>
+              <div>
+                <div class="label">件数</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.count || 0}" data-f="count" />
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn-save" onclick="saveRunEdit('${r.id}')">保存</button>
+              <button class="btn-del" onclick="deleteRun('${r.id}')">削除</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function saveRunEdit(id) {
+      const item = document.querySelector(`.run-item[data-id="${id}"]`);
+      if (!item) return;
+
+      const get = (f) => num(item.querySelector(`[data-f="${f}"]`)?.value);
+
+      const amount = get("amount");
+      const time   = get("time");
+      const cash   = get("cash");
+      const count  = get("count");
+
+      if (count <= 0) return;
+      if (amount <= 0) return;
+
+      const idx = state.runsLog.findIndex(r => r.id === id);
+      if (idx < 0) return;
+
+      const prevCash = state.runsLog[idx].cash || 0;
+      state.cash += (cash - prevCash);
+
+      state.runsLog[idx] = Object.assign({}, state.runsLog[idx], { amount, time, cash, count });
+
+      saveState();
+      calcTotals();
+    }
+
+    function deleteRun(id) {
+      const idx = state.runsLog.findIndex(r => r.id === id);
+      if (idx < 0) return;
+
+      const prevCash = state.runsLog[idx].cash || 0;
+      state.cash -= prevCash;
+      if (state.cash < 0) state.cash = 0;
+
+      state.runsLog.splice(idx, 1);
+      saveState();
+      calcTotals();
+    }
+
+    el("dailyNote").addEventListener("input", () => {
+      state.note = el("dailyNote").value;
       saveState();
     });
 

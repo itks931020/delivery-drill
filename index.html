@@ -10,11 +10,10 @@
       --card: #141a2b;
       --accent: #3ba9ff;
       --accent-soft: #234567;
-      --gold: #ffcc33;
+      --gold: #ffd700;
       --text: #f5f5f5;
       --muted: #9ca3af;
       --danger: #f97373;
-      --orange: #f97316;
     }
     * { box-sizing: border-box; }
     body {
@@ -33,12 +32,43 @@
       color: var(--muted);
       margin-bottom: 10px;
     }
-    .dashboard {
-      display: flex;
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      grid-template-rows: auto auto auto;
       gap: 8px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
+      margin-bottom: 4px;
     }
+    .dash-item {
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(15,23,42,0.8);
+      border: 1px solid rgba(148,163,184,0.2);
+    }
+    .dash-label {
+      font-size: 10px;
+      color: var(--muted);
+    }
+    .dash-value {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .dash-total-row {
+      grid-column: 1 / 3;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: radial-gradient(circle at top, #3b82f6 0, #020617 55%);
+      border: 1px solid rgba(59,130,246,0.5);
+    }
+    .dash-total-row .dash-label {
+      font-size: 11px;
+      color: #e5e7eb;
+    }
+    .dash-total-row .dash-value {
+      font-size: 20px;
+      color: var(--gold);
+    }
+
     .card {
       background: linear-gradient(135deg, rgba(20,26,43,0.95), rgba(9,12,24,0.98));
       border-radius: 14px;
@@ -57,13 +87,18 @@
       font-size: 11px;
       color: var(--muted);
     }
-    .big {
-      font-size: 18px;
-      font-weight: 700;
+    .class-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 2px;
     }
-    .gold { color: var(--gold); }
-    .orange { color: var(--orange); }
-
+    .class-meta {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+    }
     .pill {
       font-size: 11px;
       padding: 2px 8px;
@@ -71,29 +106,13 @@
       border: 1px solid rgba(148,163,184,0.7);
       color: var(--muted);
     }
-    .progress-bar {
-      width: 100%;
-      height: 6px;
-      border-radius: 999px;
-      background: #020617;
-      overflow: hidden;
-      margin-top: 6px;
-    }
-    .progress-inner {
-      height: 100%;
-      width: 0%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, #3ba9ff, #22c55e);
-      transition: width 0.25s ease-out;
-    }
     .row {
       display: flex;
       gap: 8px;
       margin-bottom: 6px;
     }
-    .row > div {
-      flex: 1;
-    }
+    .row > div { flex: 1; }
+
     input[type="number"], select, textarea {
       width: 100%;
       padding: 8px 9px;
@@ -104,9 +123,8 @@
       font-size: 12px;
       outline: none;
     }
-    input::placeholder {
-      color: #6b7280;
-    }
+    input::placeholder { color: #6b7280; }
+
     button {
       width: 100%;
       padding: 8px;
@@ -124,25 +142,47 @@
       transform: translateY(1px);
       box-shadow: 0 4px 10px rgba(16,185,129,0.45);
     }
-    .class-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-    .class-meta {
-      font-size: 11px;
-      color: var(--muted);
-      display: flex;
-      justify-content: space-between;
-      gap: 4px;
-    }
+
     .status-line {
       font-size: 11px;
       color: var(--muted);
       margin-top: 4px;
     }
-    .status-line span {
-      margin-right: 6px;
+    .status-line span { margin-right: 6px; }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: #020617;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-inner {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #3ba9ff, #22c55e);
+      transition: width 0.25s ease-out;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .btn-row button {
+      width: 100%;
+      font-size: 12px;
+      padding: 7px;
+    }
+    .btn-quest {
+      background: linear-gradient(90deg, #3b82f6, #06b6d4);
+      box-shadow: 0 8px 18px rgba(59,130,246,0.55);
+    }
+    .btn-cash {
+      background: linear-gradient(90deg, #f97316, #facc15);
+      box-shadow: 0 8px 18px rgba(249,115,22,0.55);
     }
   </style>
 </head>
@@ -152,26 +192,26 @@
 
   <!-- トップダッシュボード -->
   <div class="card">
-    <div class="dashboard">
-      <div style="flex:1;">
-        <div class="label">ドリル進捗</div>
-        <div class="big"><span id="totalRuns">0</span> / 35回</div>
+    <div class="dashboard-grid">
+      <div class="dash-item">
+        <div class="dash-label">ドリル進捗</div>
+        <div class="dash-value"><span id="totalRuns">0</span> / 35回</div>
       </div>
-      <div style="width:1px; background:#1e293b;"></div>
-      <div style="flex:1;">
-        <div class="label">総配達件数</div>
-        <div class="big"><span id="totalDeliveries">0</span>件</div>
+      <div class="dash-item">
+        <div class="dash-label">総配達件数</div>
+        <div class="dash-value"><span id="totalDeliveries">0</span>件</div>
       </div>
-    </div>
-    <div class="dashboard" style="margin-top:4px;">
-      <div style="flex:1;">
-        <div class="label">総収益 (クエスト・現金込み)</div>
-        <div class="big orange">¥<span id="totalAmount">0</span></div>
+      <div class="dash-item">
+        <div class="dash-label">クエスト合計</div>
+        <div class="dash-value">¥<span id="questTotalTop">0</span></div>
       </div>
-      <div style="width:1px; background:#1e293b;"></div>
-      <div style="flex:1;">
-        <div class="label">クエスト+現金</div>
-        <div class="big">¥<span id="questCashTotal">0</span></div>
+      <div class="dash-item">
+        <div class="dash-label">現金回収合計</div>
+        <div class="dash-value">¥<span id="cashTotalTop">0</span></div>
+      </div>
+      <div class="dash-total-row">
+        <div class="dash-label">総売上 (クエスト・現金込み)</div>
+        <div class="dash-value">¥<span id="totalAmount">0</span></div>
       </div>
     </div>
     <div class="label" style="margin-top:6px;">ドリル達成度</div>
@@ -179,17 +219,6 @@
       <div id="drillProgress" class="progress-inner"></div>
     </div>
   </div>
-
-  <!-- 共通: 件数セレクト -->
-  <script>
-    function renderCountOptions(defaultValue) {
-      let html = "";
-      for (let i = 1; i <= 5; i++) {
-        html += `<option value="${i}" ${i === defaultValue ? "selected" : ""}>${i}</option>`;
-      }
-      return html;
-    }
-  </script>
 
   <!-- 1500円クラス -->
   <div class="card" style="margin-top:10px;">
@@ -216,7 +245,11 @@
       <div>
         <div class="label">件数 (件)</div>
         <select id="inputCount1500">
-          <script>document.write(renderCountOptions(2));</script>
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
         </select>
       </div>
     </div>
@@ -257,7 +290,11 @@
       <div>
         <div class="label">件数 (件)</div>
         <select id="inputCount1000">
-          <script>document.write(renderCountOptions(2));</script>
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
         </select>
       </div>
     </div>
@@ -298,16 +335,24 @@
       <div>
         <div class="label">件数 (件)</div>
         <select id="inputCount600">
-          <script>document.write(renderCountOptions(1));</script>
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
         </select>
       </div>
     </div>
     <button onclick="addClassRun('600')">追加</button>
     <div class="status-line">
-      <span>推奨回数目安: <span id="suggest600" class="gold">0</span>回</span>
+      <span>達成回数: <span id="doneRuns600">0</span> / 30回</span>
       <span>実配達件数: <span id="delivered600">0</span>件</span>
       <span>クラス合計: ¥<span id="amount600">0</span></span>
       <span>時間合計: <span id="time600">0</span>分</span>
+      <span>推奨回数目安: <span id="suggest600" style="color:var(--gold);">0</span>回</span>
+    </div>
+    <div class="progress-bar">
+      <div id="progress600" class="progress-inner"></div>
     </div>
   </div>
 
@@ -334,7 +379,11 @@
       <div>
         <div class="label">件数 (件)</div>
         <select id="inputCustomCount">
-          <script>document.write(renderCountOptions(1));</script>
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
         </select>
       </div>
     </div>
@@ -348,11 +397,11 @@
   </div>
 
   <!-- クエスト & 今日のメモ & 現金回収 -->
-  <div class="card" style="margin-top:10px; margin-bottom:16px;">
+  <div class="card" style="margin-top:10px; margin-bottom:10px;">
     <div class="class-title">クエスト & 今日のメモ & 現金回収</div>
     <div class="row" style="margin-top:6px;">
       <div>
-        <div class="label">クエスト金額追加 (円)</div>
+        <div class="label">クエスト金額 (円)</div>
         <input type="number" id="inputQuest" placeholder="例: 1200" min="0" />
       </div>
       <div>
@@ -360,24 +409,28 @@
         <input type="number" id="inputCash" placeholder="例: 500" min="0" />
       </div>
     </div>
-    <button onclick="applyQuestCash()">クエスト & 現金を追加</button>
+    <div class="btn-row">
+      <button class="btn-quest" onclick="addQuest()">クエストを追加</button>
+      <button class="btn-cash" onclick="addCash()">現金回収を追加</button>
+    </div>
     <div class="status-line">
       <span>クエスト合計: ¥<span id="questOnly">0</span></span>
       <span>現金回収合計: ¥<span id="cashOnly">0</span></span>
-      <span class="gold">累計: ¥<span id="questCashPreview">0</span></span>
     </div>
     <div class="label" style="margin-top:6px;">今日のメモ（雨 / 休日 / ブースト など）</div>
     <textarea id="dailyNote" placeholder="例: 雨クエ中 / 夕方からブースト強め など"></textarea>
   </div>
-<div class="card" style="margin-top:8px; margin-bottom:24px; text-align:center;">
-  <div class="label" style="margin-bottom:4px;">表示が古いと感じたら</div>
-  <button onclick="location.reload()" style="max-width:260px; margin:0 auto;">
-    ページを更新（最新コードを読み込む）
-  </button>
-</div>
+
+  <!-- 更新ボタン -->
+  <div class="card" style="margin-top:8px; margin-bottom:24px; text-align:center;">
+    <div class="label" style="margin-bottom:4px;">コード更新後に押す用</div>
+    <button onclick="location.reload()" style="max-width:260px; margin:0 auto;">
+      ページを更新（最新コードを読み込む）
+    </button>
+  </div>
 
   <script>
-    const STATE_KEY = "deliveryDrillState_v4";
+    const STATE_KEY = "deliveryDrillState_v5";
 
     let state = {
       runs: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
@@ -414,9 +467,8 @@
       document.getElementById("totalDeliveries").textContent = totalDeliveries;
       document.getElementById("totalAmount").textContent = totalAmount.toLocaleString();
 
-      const questCashTotal = state.quest + state.cash;
-      document.getElementById("questCashTotal").textContent = questCashTotal.toLocaleString();
-      document.getElementById("questCashPreview").textContent = questCashTotal.toLocaleString();
+      document.getElementById("questTotalTop").textContent = state.quest.toLocaleString();
+      document.getElementById("cashTotalTop").textContent  = state.cash.toLocaleString();
 
       const drillPercent = Math.min(100, (totalRuns / 35) * 100);
       document.getElementById("drillProgress").style.width = drillPercent + "%";
@@ -428,46 +480,43 @@
 
       document.getElementById("doneRuns1500").textContent = state.runs["1500"];
       document.getElementById("doneRuns1000").textContent = state.runs["1000"];
+      document.getElementById("doneRuns600").textContent  = state.runs["600"];
 
       ["1500","1000","600","custom"].forEach(k => {
-        if (document.getElementById("delivered" + k)) {
-          document.getElementById("delivered" + k).textContent =
-            state.delivered[k].toString();
-        }
-        if (document.getElementById("amount" + k)) {
-          document.getElementById("amount" + k).textContent =
-            state.amounts[k].toLocaleString();
-        }
-        if (document.getElementById("time" + k)) {
-          document.getElementById("time" + k).textContent =
-            state.times[k].toString();
-        }
+        const delEl = document.getElementById("delivered" + k);
+        const amtEl = document.getElementById("amount" + k);
+        const timeEl = document.getElementById("time" + k);
+        if (delEl) delEl.textContent = state.delivered[k].toString();
+        if (amtEl) amtEl.textContent = state.amounts[k].toLocaleString();
+        if (timeEl) timeEl.textContent = state.times[k].toString();
       });
 
       const p1500 = Math.min(100, (state.runs["1500"] / 2) * 100);
       const p1000 = Math.min(100, (state.runs["1000"] / 6) * 100);
+      const p600  = Math.min(100, (state.runs["600"]  / 30) * 100);
       document.getElementById("progress1500").style.width = p1500 + "%";
       document.getElementById("progress1000").style.width = p1000 + "%";
+      document.getElementById("progress600").style.width  = p600 + "%";
 
       const usedTime =
         state.times["1500"] + state.times["1000"] +
         state.times["600"] + state.times.custom;
       const targetTime = 750; // 12.5時間
       const remain = Math.max(0, targetTime - usedTime);
-      const suggest = Math.floor(remain / 20); // 600クラスは20分目安
+      const suggest = Math.floor(remain / 20); // 600クラス20分目安
       document.getElementById("suggest600").textContent = suggest;
 
-      document.getElementById("amountCustom").textContent = state.amounts.custom.toLocaleString();
-      document.getElementById("timeCustom").textContent = state.times.custom.toString();
       document.getElementById("deliveredCustom").textContent = state.delivered.custom.toString();
+      document.getElementById("amountCustom").textContent    = state.amounts.custom.toLocaleString();
+      document.getElementById("timeCustom").textContent      = state.times.custom.toString();
       const avg = state.delivered.custom
         ? Math.round(state.amounts.custom / state.delivered.custom)
         : 0;
       document.getElementById("avgCustom").textContent = avg.toLocaleString();
 
       document.getElementById("questOnly").textContent = state.quest.toLocaleString();
-      document.getElementById("cashOnly").textContent = state.cash.toLocaleString();
-      document.getElementById("dailyNote").value = state.note;
+      document.getElementById("cashOnly").textContent  = state.cash.toLocaleString();
+      document.getElementById("dailyNote").value       = state.note;
     }
 
     function addClassRun(key) {
@@ -483,14 +532,14 @@
       if (!amount || amount < 0) return;
 
       state.runs[key] += 1;
-      state.delivered[key] += count;
-      state.amounts[key] += amount * count;
+      state.delivered[key] += count;          // 件数だけを積み上げ
+      state.amounts[key]   += amount * count; // 金額は別で合計
       if (time && time > 0) {
         state.times[key] += time * count;
       }
 
       amountInput.value = "";
-      timeInput.value = "";
+      timeInput.value   = "";
       flashKey(key);
       saveState();
       calcTotals();
@@ -503,9 +552,9 @@
       if (!count || count <= 0) return;
       if (!amount || amount < 0) return;
 
-      state.runs.custom += 1;
+      state.runs.custom      += 1;
       state.delivered.custom += count;
-      state.amounts.custom += amount * count;
+      state.amounts.custom   += amount * count;
       if (time && time > 0) {
         state.times.custom += time * count;
       }
@@ -517,16 +566,20 @@
       calcTotals();
     }
 
-    function applyQuestCash() {
+    function addQuest() {
       const q = parseInt(document.getElementById("inputQuest").value || "0", 10);
-      const c = parseInt(document.getElementById("inputCash").value || "0", 10);
-
-      if (q > 0) state.quest += q;
-      if (c > 0) state.cash  += c;
-
+      if (!q || q <= 0) return;
+      state.quest += q;
       document.getElementById("inputQuest").value = "";
-      document.getElementById("inputCash").value  = "";
+      saveState();
+      calcTotals();
+    }
 
+    function addCash() {
+      const c = parseInt(document.getElementById("inputCash").value || "0", 10);
+      if (!c || c <= 0) return;
+      state.cash += c;
+      document.getElementById("inputCash").value = "";
       saveState();
       calcTotals();
     }
@@ -535,7 +588,7 @@
       const el =
         key === "1500" ? document.getElementById("progress1500")
         : key === "1000" ? document.getElementById("progress1000")
-        : key === "600"  ? document.getElementById("suggest600")
+        : key === "600"  ? document.getElementById("progress600")
         : document.getElementById("runsCustom");
       if (!el) return;
       const original = el.style.boxShadow;

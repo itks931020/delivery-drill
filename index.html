@@ -190,14 +190,27 @@
       background: linear-gradient(90deg, #64748b, #334155);
       box-shadow: 0 8px 18px rgba(100,116,139,0.35);
     }
-    .runlist {
-      margin-top: 8px;
-      display: none;
-      border: 1px solid rgba(148,163,184,0.22);
-      border-radius: 12px;
-      padding: 8px;
-      background: rgba(2,6,23,0.35);
-    }
+/* 配達済みリスト：ぺろーん開閉（軽い） */
+.runlist{
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  padding: 0 8px;
+  border: 1px solid rgba(148,163,184,0.0);
+  border-radius: 12px;
+  background: rgba(2,6,23,0.35);
+  transition: max-height .22s ease, opacity .18s ease, margin-top .18s ease, border-color .18s ease, padding .18s ease;
+  will-change: max-height, opacity;
+}
+
+.runlist.open{
+  max-height: 1200px;           /* リストが長いなら増やしてOK */
+  opacity: 1;
+  margin-top: 8px;
+  padding: 8px;
+  border-color: rgba(148,163,184,0.22);
+}
     .run-item {
       border: 1px solid rgba(148,163,184,0.18);
       border-radius: 12px;
@@ -733,70 +746,73 @@
     }
 
     // ===== 配達済みリスト =====
-    function toggleRunList(key) {
-      const box = el("runList" + key);
-      if (!box) return;
-      const now = box.style.display === "block";
-      box.style.display = now ? "none" : "block";
-      if (!now) renderRunList(key);
-    }
+function toggleRunList(key) {
+  const box = el("runList" + key);
+  if (!box) return;
 
-    function renderRunListIfOpen(key) {
-      const box = el("runList" + key);
-      if (!box) return;
-      if (box.style.display === "block") renderRunList(key);
-    }
+  const willOpen = !box.classList.contains("open");
+  box.classList.toggle("open");
 
-    function renderRunList(key) {
-      const box = el("runList" + key);
-      if (!box) return;
+  // 開くときだけ描画（軽い）
+  if (willOpen) renderRunList(key);
+}
 
-      const list = state.runsLog
-        .filter(r => r.key === key)
-        .sort((a,b) => (b.ts || 0) - (a.ts || 0));
+function renderRunListIfOpen(key) {
+  const box = el("runList" + key);
+  if (!box) return;
+  if (box.classList.contains("open")) renderRunList(key);
+}
 
-      if (list.length === 0) {
-        box.innerHTML = `<div class="label">まだこのクラスの配達記録はありません。</div>`;
-        return;
-      }
+function renderRunList(key) {
+  const box = el("runList" + key);
+  if (!box) return;
 
-      box.innerHTML = list.map(r => {
-        const d = new Date(r.ts || Date.now());
-        const stamp = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-        return `
-          <div class="run-item" data-id="${r.id}">
-            <div class="mini">
-              <span>${stamp}</span>
-              <span>ID: ${r.id.slice(-6)}</span>
-            </div>
+  const list = state.runsLog
+    .filter(r => r.key === key)
+    .sort((a,b) => (b.ts || 0) - (a.ts || 0));
 
-            <div class="grid">
-              <div>
-                <div class="label">金額</div>
-                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.amount || 0}" data-f="amount" />
-              </div>
-              <div>
-                <div class="label">時間(分)</div>
-                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.time || 0}" data-f="time" />
-              </div>
-              <div>
-                <div class="label">現金</div>
-                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.cash || 0}" data-f="cash" />
-              </div>
-              <div>
-                <div class="label">件数</div>
-                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.count || 0}" data-f="count" />
-              </div>
-            </div>
+  if (list.length === 0) {
+    box.innerHTML = `<div class="label">まだこのクラスの配達記録はありません。</div>`;
+    return;
+  }
 
-            <div class="actions">
-              <button class="btn-save" onclick="saveRunEdit('${r.id}')">保存</button>
-              <button class="btn-del" onclick="deleteRun('${r.id}')">削除</button>
-            </div>
+  box.innerHTML = list.map(r => {
+    const d = new Date(r.ts || Date.now());
+    const stamp = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    return `
+      <div class="run-item" data-id="${r.id}">
+        <div class="mini">
+          <span>${stamp}</span>
+          <span>ID: ${r.id.slice(-6)}</span>
+        </div>
+
+        <div class="grid">
+          <div>
+            <div class="label">金額</div>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.amount || 0}" data-f="amount" />
           </div>
-        `;
-      }).join("");
-    }
+          <div>
+            <div class="label">時間(分)</div>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.time || 0}" data-f="time" />
+          </div>
+          <div>
+            <div class="label">現金</div>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.cash || 0}" data-f="cash" />
+          </div>
+          <div>
+            <div class="label">件数</div>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.count || 0}" data-f="count" />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn-save" onclick="saveRunEdit('${r.id}')">保存</button>
+          <button class="btn-del" onclick="deleteRun('${r.id}')">削除</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
 
     function saveRunEdit(id) {
       const item = document.querySelector(`.run-item[data-id="${id}"]`);

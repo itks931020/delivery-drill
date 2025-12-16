@@ -14,6 +14,7 @@
       --text: #f5f5f5;
       --muted: #9ca3af;
       --danger: #f97373;
+      --orange: #f97316;
     }
     * { box-sizing: border-box; }
     body {
@@ -60,9 +61,9 @@
       font-size: 18px;
       font-weight: 700;
     }
-    .gold {
-      color: var(--gold);
-    }
+    .gold { color: var(--gold); }
+    .orange { color: var(--orange); }
+
     .pill {
       font-size: 11px;
       padding: 2px 8px;
@@ -93,7 +94,7 @@
     .row > div {
       flex: 1;
     }
-    input[type="number"], input[type="text"] {
+    input[type="number"], select, textarea {
       width: 100%;
       padding: 8px 9px;
       border-radius: 10px;
@@ -143,30 +144,18 @@
     .status-line span {
       margin-right: 6px;
     }
-    textarea {
-      width: 100%;
-      min-height: 60px;
-      padding: 8px 9px;
-      border-radius: 10px;
-      border: 1px solid #1e293b;
-      background: rgba(15,23,42,0.9);
-      color: var(--text);
-      font-size: 12px;
-      resize: vertical;
-      outline: none;
-    }
   </style>
 </head>
 <body>
   <h1>配達ドリルトラッカー</h1>
-  <div class="sub">「1500円クラス / 1000円クラス / 600円クラス」はあくまで目安。金額・時間・件数は毎回手打ちで記録する。</div>
+  <div class="sub">クラスはあくまで目安。金額・時間・件数は毎回手打ちで記録していく。</div>
 
   <!-- トップダッシュボード -->
   <div class="card">
     <div class="dashboard">
       <div style="flex:1;">
         <div class="label">ドリル進捗</div>
-        <div class="big gold"><span id="totalRuns">0</span> / 35回</div>
+        <div class="big"><span id="totalRuns">0</span> / 35回</div>
       </div>
       <div style="width:1px; background:#1e293b;"></div>
       <div style="flex:1;">
@@ -177,12 +166,12 @@
     <div class="dashboard" style="margin-top:4px;">
       <div style="flex:1;">
         <div class="label">総収益 (クエスト・現金込み)</div>
-        <div class="big">¥<span id="totalAmount">0</span></div>
+        <div class="big orange">¥<span id="totalAmount">0</span></div>
       </div>
       <div style="width:1px; background:#1e293b;"></div>
       <div style="flex:1;">
         <div class="label">クエスト+現金</div>
-        <div class="big gold">¥<span id="questCashTotal">0</span></div>
+        <div class="big">¥<span id="questCashTotal">0</span></div>
       </div>
     </div>
     <div class="label" style="margin-top:6px;">ドリル達成度</div>
@@ -190,6 +179,17 @@
       <div id="drillProgress" class="progress-inner"></div>
     </div>
   </div>
+
+  <!-- 共通: 件数セレクト -->
+  <script>
+    function renderCountOptions(defaultValue) {
+      let html = "";
+      for (let i = 1; i <= 5; i++) {
+        html += `<option value="${i}" ${i === defaultValue ? "selected" : ""}>${i}</option>`;
+      }
+      return html;
+    }
+  </script>
 
   <!-- 1500円クラス -->
   <div class="card" style="margin-top:10px;">
@@ -210,12 +210,14 @@
         <input type="number" id="inputAmount1500" placeholder="例: 1640" min="0" />
       </div>
       <div>
-        <div class="label">件数 (件)</div>
-        <input type="number" id="inputCount1500" placeholder="例: 2" min="1" />
-      </div>
-      <div>
         <div class="label">時間 (分/件 or 合計)</div>
         <input type="number" id="inputTime1500" placeholder="例: 40" min="0" />
+      </div>
+      <div>
+        <div class="label">件数 (件)</div>
+        <select id="inputCount1500">
+          <script>document.write(renderCountOptions(2));</script>
+        </select>
       </div>
     </div>
     <button onclick="addClassRun('1500')">追加</button>
@@ -249,12 +251,14 @@
         <input type="number" id="inputAmount1000" placeholder="例: 1050" min="0" />
       </div>
       <div>
-        <div class="label">件数 (件)</div>
-        <input type="number" id="inputCount1000" placeholder="例: 3" min="1" />
-      </div>
-      <div>
         <div class="label">時間 (分/件 or 合計)</div>
         <input type="number" id="inputTime1000" placeholder="例: 30" min="0" />
+      </div>
+      <div>
+        <div class="label">件数 (件)</div>
+        <select id="inputCount1000">
+          <script>document.write(renderCountOptions(2));</script>
+        </select>
       </div>
     </div>
     <button onclick="addClassRun('1000')">追加</button>
@@ -288,12 +292,14 @@
         <input type="number" id="inputAmount600" placeholder="例: 620" min="0" />
       </div>
       <div>
-        <div class="label">件数 (件)</div>
-        <input type="number" id="inputCount600" placeholder="例: 5" min="1" />
-      </div>
-      <div>
         <div class="label">時間 (分/件 or 合計)</div>
         <input type="number" id="inputTime600" placeholder="例: 20" min="0" />
+      </div>
+      <div>
+        <div class="label">件数 (件)</div>
+        <select id="inputCount600">
+          <script>document.write(renderCountOptions(1));</script>
+        </select>
       </div>
     </div>
     <button onclick="addClassRun('600')">追加</button>
@@ -305,7 +311,7 @@
     </div>
   </div>
 
-  <!-- カスタムクラス（そのまま） -->
+  <!-- カスタムクラス -->
   <div class="card" style="margin-top:10px;">
     <div class="card-header">
       <div>
@@ -322,12 +328,14 @@
         <input type="number" id="inputCustomAmount" placeholder="例: 2500" min="0" />
       </div>
       <div>
-        <div class="label">件数 (件)</div>
-        <input type="number" id="inputCustomCount" placeholder="例: 2" min="1" />
-      </div>
-      <div>
         <div class="label">時間 (分/件 or 合計)</div>
         <input type="number" id="inputCustomTime" placeholder="例: 45" min="0" />
+      </div>
+      <div>
+        <div class="label">件数 (件)</div>
+        <select id="inputCustomCount">
+          <script>document.write(renderCountOptions(1));</script>
+        </select>
       </div>
     </div>
     <button onclick="addCustom()">追加</button>
@@ -345,25 +353,25 @@
     <div class="row" style="margin-top:6px;">
       <div>
         <div class="label">クエスト金額追加 (円)</div>
-        <input type="number" id="inputQuest" placeholder="例: 1200" min="0" oninput="updateQuestCash()" />
+        <input type="number" id="inputQuest" placeholder="例: 1200" min="0" />
       </div>
       <div>
         <div class="label">現金回収 (円)</div>
-        <input type="number" id="inputCash" placeholder="例: 500" min="0" oninput="updateQuestCash()" />
+        <input type="number" id="inputCash" placeholder="例: 500" min="0" />
       </div>
     </div>
-    <button onclick="applyQuestCash()">クエスト & 現金を反映</button>
+    <button onclick="applyQuestCash()">クエスト & 現金を追加</button>
     <div class="status-line">
-      <span>クエスト: ¥<span id="questOnly">0</span></span>
-      <span>現金回収: ¥<span id="cashOnly">0</span></span>
-      <span class="gold">合計: ¥<span id="questCashPreview">0</span></span>
+      <span>クエスト合計: ¥<span id="questOnly">0</span></span>
+      <span>現金回収合計: ¥<span id="cashOnly">0</span></span>
+      <span class="gold">累計: ¥<span id="questCashPreview">0</span></span>
     </div>
     <div class="label" style="margin-top:6px;">今日のメモ（雨 / 休日 / ブースト など）</div>
     <textarea id="dailyNote" placeholder="例: 雨クエ中 / 夕方からブースト強め など"></textarea>
   </div>
 
   <script>
-    const STATE_KEY = "deliveryDrillState_v3";
+    const STATE_KEY = "deliveryDrillState_v4";
 
     let state = {
       runs: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
@@ -402,16 +410,15 @@
 
       const questCashTotal = state.quest + state.cash;
       document.getElementById("questCashTotal").textContent = questCashTotal.toLocaleString();
+      document.getElementById("questCashPreview").textContent = questCashTotal.toLocaleString();
 
       const drillPercent = Math.min(100, (totalRuns / 35) * 100);
       document.getElementById("drillProgress").style.width = drillPercent + "%";
 
-      ["1500","1000","600","Custom"].forEach(key => {
-        const k = key === "Custom" ? "custom" : key;
-        if (document.getElementById("runs" + key)) {
-          document.getElementById("runs" + key).textContent = state.runs[k];
-        }
-      });
+      document.getElementById("runs1500").textContent = state.runs["1500"];
+      document.getElementById("runs1000").textContent = state.runs["1000"];
+      document.getElementById("runs600").textContent  = state.runs["600"];
+      document.getElementById("runsCustom").textContent = state.runs.custom;
 
       document.getElementById("doneRuns1500").textContent = state.runs["1500"];
       document.getElementById("doneRuns1000").textContent = state.runs["1000"];
@@ -444,10 +451,9 @@
       const suggest = Math.floor(remain / 20); // 600クラスは20分目安
       document.getElementById("suggest600").textContent = suggest;
 
-      document.getElementById("runsCustom").textContent = state.runs.custom;
-      document.getElementById("deliveredCustom").textContent = state.delivered.custom;
       document.getElementById("amountCustom").textContent = state.amounts.custom.toLocaleString();
       document.getElementById("timeCustom").textContent = state.times.custom.toString();
+      document.getElementById("deliveredCustom").textContent = state.delivered.custom.toString();
       const avg = state.delivered.custom
         ? Math.round(state.amounts.custom / state.delivered.custom)
         : 0;
@@ -455,18 +461,17 @@
 
       document.getElementById("questOnly").textContent = state.quest.toLocaleString();
       document.getElementById("cashOnly").textContent = state.cash.toLocaleString();
-      document.getElementById("questCashPreview").textContent = questCashTotal.toLocaleString();
       document.getElementById("dailyNote").value = state.note;
     }
 
     function addClassRun(key) {
       const amountInput = document.getElementById("inputAmount" + key);
-      const countInput  = document.getElementById("inputCount" + key);
       const timeInput   = document.getElementById("inputTime" + key);
+      const countSelect = document.getElementById("inputCount" + key);
 
       const amount = parseInt(amountInput.value || "0", 10);
-      const count  = parseInt(countInput.value  || "0", 10);
-      const time   = parseInt(timeInput.value   || "0", 10);
+      const count  = parseInt(countSelect.value || "0", 10);
+      const time   = parseInt(timeInput.value || "0", 10);
 
       if (!count || count <= 0) return;
       if (!amount || amount < 0) return;
@@ -474,13 +479,11 @@
       state.runs[key] += 1;
       state.delivered[key] += count;
       state.amounts[key] += amount * count;
-
       if (time && time > 0) {
         state.times[key] += time * count;
       }
 
       amountInput.value = "";
-      countInput.value = "";
       timeInput.value = "";
       flashKey(key);
       saveState();
@@ -489,8 +492,8 @@
 
     function addCustom() {
       const amount = parseInt(document.getElementById("inputCustomAmount").value || "0", 10);
-      const count  = parseInt(document.getElementById("inputCustomCount").value  || "0", 10);
       const time   = parseInt(document.getElementById("inputCustomTime").value   || "0", 10);
+      const count  = parseInt(document.getElementById("inputCustomCount").value  || "0", 10);
       if (!count || count <= 0) return;
       if (!amount || amount < 0) return;
 
@@ -502,24 +505,22 @@
       }
 
       document.getElementById("inputCustomAmount").value = "";
-      document.getElementById("inputCustomCount").value = "";
-      document.getElementById("inputCustomTime").value = "";
+      document.getElementById("inputCustomTime").value   = "";
       flashKey("Custom");
       saveState();
       calcTotals();
     }
 
-    function updateQuestCash() {
-      const q = parseInt(document.getElementById("inputQuest").value || "0", 10);
-      const c = parseInt(document.getElementById("inputCash").value || "0", 10);
-      document.getElementById("questCashPreview").textContent = (q + c).toLocaleString();
-    }
-
     function applyQuestCash() {
       const q = parseInt(document.getElementById("inputQuest").value || "0", 10);
       const c = parseInt(document.getElementById("inputCash").value || "0", 10);
-      state.quest = q;
-      state.cash = c;
+
+      if (q > 0) state.quest += q;
+      if (c > 0) state.cash  += c;
+
+      document.getElementById("inputQuest").value = "";
+      document.getElementById("inputCash").value  = "";
+
       saveState();
       calcTotals();
     }

@@ -1090,6 +1090,18 @@ const store = (() => {
 
     // 初回：ロード後に再保存（移行があったらここで確定）
     store.save(state);
+    Object.assign(window, {
+  addClassRun,
+  addCustom,
+  addQuest,
+  addCash,
+  resetAll,
+  toggleRunList,
+  renderRunListIfOpen,
+  renderRunList,
+  saveRunEdit,
+  deleteRun
+});
     calcTotals();
   </script>
 </body>

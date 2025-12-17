@@ -747,9 +747,9 @@
       };
     })();
 
-    // =========================
-    // store（localStorage直書き禁止）
-    // =========================
+// =========================
+// store（localStorage直書き禁止）
+// =========================
 const store = (() => {
   const baseState = { runsLog: [], quest: 0, cash: 0, note: "" };
 
@@ -775,17 +775,13 @@ const store = (() => {
   };
 
   const load = () => {
-    // まず新キー
     let s = tryLoad(STATE_KEY);
-
-    // なければ旧キーを順に探す
     if (!s) {
       for (const k of (LEGACY_KEYS || [])) {
         s = tryLoad(k);
         if (s) break;
       }
     }
-
     return s || Object.assign({}, baseState);
   };
 
@@ -806,20 +802,6 @@ const store = (() => {
 
   return { load, save };
 })();
-
-      const save = (state) => {
-        // 保存前に runsLog を「型固定」に再整形（保険）
-        const s = Object.assign({}, state);
-        const list = Array.isArray(s.runsLog) ? s.runsLog : [];
-        s.runsLog = list.map(core.migrateRunsLogEntry);
-
-        try {
-          localStorage.setItem(STATE_KEY, JSON.stringify(s));
-        } catch(e) {}
-      };
-
-      return { load, save };
-    })();
 
     // =========================
     // state（アプリの唯一の状態）

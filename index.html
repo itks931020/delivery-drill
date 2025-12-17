@@ -668,20 +668,20 @@
       };
 
       // 新形式runsLog -> 現行UI用の「表示/計算用」行に復元（DOM依存なし）
-      const toUiRun = (r) => {
-        const memo = unpackMemo(r?.memo);
-        const ts = (typeof memo.ts === "number") ? memo.ts : Date.now();
+const toUiRun = (r) => {
+  const memo = unpackMemo(r?.memo);
+  const ts = (typeof memo.ts === "number") ? memo.ts : Date.now();
 
-        return {
-          id: String(r?.id || uid()),
-          key: memo.key || "custom",
-          amount: num(r?.amount),
-          time: num(r?.minutes),       // minutesをtimeとして扱う（UI互換）
-          cash: num(memo.cash),
-          count: num(memo.count) || 0,
-          ts
-        };
-      };
+  return {
+    id: String(r?.id || uid()),
+    key: memo.key || "custom",
+    amount: num(r?.amount),
+    time: num(r?.minutes ?? memo.time),   // ✅ここ
+    cash: num(memo.cash),
+    count: num(memo.count) || 0,
+    ts
+  };
+};
 
       // 集計（uiRunsを食う）
       const aggregateFromUiRuns = (uiRuns) => {

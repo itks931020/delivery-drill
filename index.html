@@ -548,44 +548,61 @@
   </div>
 
   <script>
-  // ===== DEBUG: iPhoneでもエラーを画面に出す =====
+/* ===== DEBUG (error only) ===== */
 (() => {
-  const box = document.createElement("pre");
-  box.id = "debugBox";
-  box.style.cssText = [
-    "position:fixed",
-    "left:8px",
-    "right:8px",
-    "bottom:8px",
-    "max-height:40vh",
-    "overflow:auto",
-    "padding:10px",
-    "border-radius:12px",
-    "background:rgba(0,0,0,0.75)",
-    "color:#fff",
-    "font-size:12px",
-    "z-index:99999",
-    "white-space:pre-wrap"
-  ].join(";");
-  box.textContent = "debug: script start\n";
-  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(box));
+  let box = null;
+  let visible = false;
 
-  const log = (msg) => { box.textContent += msg + "\n"; };
+  const ensureBox = () => {
+    if (box) return box;
+
+    box = document.createElement("pre");
+    box.id = "debugBox";
+    box.style.cssText = [
+      "position:fixed",
+      "left:8px",
+      "right:8px",
+      "bottom:8px",
+      "max-height:40vh",
+      "overflow:auto",
+      "padding:10px",
+      "border-radius:12px",
+      "background:rgba(0,0,0,0.8)",
+      "color:#fff",
+      "font-size:12px",
+      "z-index:99999",
+      "white-space:pre-wrap",
+      "display:none"
+    ].join(";");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.appendChild(box);
+    });
+
+    return box;
+  };
+
+  const show = (msg) => {
+    const b = ensureBox();
+    if (!visible) {
+      b.style.display = "block";
+      visible = true;
+    }
+    b.textContent += msg + "\n";
+  };
 
   window.onerror = (m, src, line, col) => {
-    log("❌ window.onerror");
-    log(String(m));
-    log(`${src || ""}  ${line}:${col}`);
+    show("❌ JS Error");
+    show(String(m));
+    show(`${src || "unknown"} ${line}:${col}`);
   };
 
   window.addEventListener("unhandledrejection", (e) => {
-    log("❌ unhandledrejection");
-    log(String(e.reason));
+    show("❌ Promise Error");
+    show(String(e.reason));
   });
-
-  // 動いてるか確認用
-  window.__ping = () => log("✅ ping " + new Date().toLocaleTimeString());
 })();
+
     const STATE_KEY = "deliveryDrillState_v9_store_core";
     const LEGACY_KEYS = ["deliveryDrillState_v8"];
     // =========================

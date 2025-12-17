@@ -120,10 +120,15 @@
       border: 1px solid #1e293b;
       background: rgba(15,23,42,0.9);
       color: var(--text);
-      font-size: 12px;
+      font-size: 12px; /* 見た目維持 */
       outline: none;
     }
     input::placeholder { color: #6b7280; }
+
+    /* iPhoneの入力ズーム対策：focus中だけ16px（viewport禁止は使わない） */
+    input[type="text"]:focus, textarea:focus, select:focus {
+      font-size: 16px;
+    }
 
     button {
       width: 100%;
@@ -190,27 +195,27 @@
       background: linear-gradient(90deg, #64748b, #334155);
       box-shadow: 0 8px 18px rgba(100,116,139,0.35);
     }
-/* 配達済みリスト：ぺろーん開閉（軽い） */
-.runlist{
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  margin-top: 0;
-  padding: 0 8px;
-  border: 1px solid rgba(148,163,184,0.0);
-  border-radius: 12px;
-  background: rgba(2,6,23,0.35);
-  transition: max-height .22s ease, opacity .18s ease, margin-top .18s ease, border-color .18s ease, padding .18s ease;
-  will-change: max-height, opacity;
-}
 
-.runlist.open{
-  max-height: 1200px;           /* リストが長いなら増やしてOK */
-  opacity: 1;
-  margin-top: 8px;
-  padding: 8px;
-  border-color: rgba(148,163,184,0.22);
-}
+    .runlist{
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      margin-top: 0;
+      padding: 0 8px;
+      border: 1px solid rgba(148,163,184,0.0);
+      border-radius: 12px;
+      background: rgba(2,6,23,0.35);
+      transition: max-height .22s ease, opacity .18s ease, margin-top .18s ease, border-color .18s ease, padding .18s ease;
+      will-change: max-height, opacity;
+    }
+
+    .runlist.open{
+      max-height: 1200px;
+      opacity: 1;
+      margin-top: 8px;
+      padding: 8px;
+      border-color: rgba(148,163,184,0.22);
+    }
     .run-item {
       border: 1px solid rgba(148,163,184,0.18);
       border-radius: 12px;
@@ -256,7 +261,6 @@
   <h1>配達ドリルトラッカー</h1>
   <div class="sub">クラスはあくまで目安。金額・時間・件数は毎回手打ちで記録していく。</div>
 
-  <!-- トップダッシュボード -->
   <div class="card">
     <div class="dashboard-grid">
       <div class="dash-item">
@@ -285,8 +289,6 @@
       <div id="drillProgress" class="progress-inner"></div>
     </div>
   </div>
-
-  <!-- ★順番変更：600円クラス → 1000円クラス → 1500円クラス -->
 
   <!-- 600円クラス -->
   <div class="card" style="margin-top:10px;">
@@ -546,58 +548,255 @@
   </div>
 
   <script>
-    const STATE_KEY = "deliveryDrillState_v8";
-
-    // iPhone対策：type=numberを避け、text+inputmode前提で数字化
-    const num = (v) => {
-      const s = (v ?? "").toString().replace(/[^\d-]/g, "");
-      const n = parseInt(s || "0", 10);
-      return Number.isFinite(n) ? n : 0;
-    };
-
-    let state = {
-      runsLog: [], // 案件ログ（編集/削除の元）
-      quest: 0,
-      cash:  0,
-      note:  ""
-    };
-
-    const el = (id) => document.getElementById(id);
-    const uid = () => "r_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
-
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STATE_KEY);
-        if (raw) state = Object.assign(state, JSON.parse(raw));
-        if (!Array.isArray(state.runsLog)) state.runsLog = [];
-      } catch(e) {}
-    }
-
-    function saveState() {
-      localStorage.setItem(STATE_KEY, JSON.stringify(state));
-    }
-
-    function aggregateFromLog() {
-      const agg = {
-        runs:      { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-        delivered: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-        amounts:   { "1500": 0, "1000": 0, "600": 0, custom: 0 },
-        times:     { "1500": 0, "1000": 0, "600": 0, custom: 0 }
+    const STATE_KEY = "deliveryDrillState_v9_store_core";
+    const LEGACY_KEYS = ["deliveryDrillState_v8"];
+    // =========================
+    // core（DOM依存なし）
+    // =========================
+    const core = (() => {
+      const num = (v) => {
+        const s = (v ?? "").toString().replace(/[^\d-]/g, "");
+        const n = parseInt(s || "0", 10);
+        return Number.isFinite(n) ? n : 0;
       };
 
-      for (const r of state.runsLog) {
-        const k = r.key;
-        if (!(k in agg.runs)) continue;
-        agg.runs[k] += 1;
-        agg.delivered[k] += (r.count || 0);
-        agg.amounts[k] += (r.amount || 0);
-        agg.times[k] += (r.time || 0);
+      const uid = () => "r_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+
+      // YYYY-MM-DD（ローカル）
+      const toDateStr = (ts) => {
+        const d = new Date(ts || Date.now());
+        const y = d.getFullYear();
+        const m = String(d.getMonth()+1).padStart(2,"0");
+        const day = String(d.getDate()).padStart(2,"0");
+        return `${y}-${m}-${day}`;
+      };
+
+      const safeJsonParse = (s, fallback) => {
+        try { return JSON.parse(s); } catch(e) { return fallback; }
+      };
+
+      // memoに入れる（現行UIに必要な情報を保持）
+      const packMemo = (obj) => JSON.stringify(obj || {});
+      const unpackMemo = (memo) => {
+        if (!memo) return {};
+        if (typeof memo === "string") return safeJsonParse(memo, {});
+        // もし将来memoがオブジェクトで来ても壊れないように
+        if (typeof memo === "object") return memo;
+        return {};
+      };
+
+      // ===== runsLogを型固定：{id,date,minutes,amount,memo} だけにする =====
+      // 旧ログ（key/time/cash/count/ts 等）を新ログに変換
+      const migrateRunsLogEntry = (r) => {
+        // すでに新形式っぽい
+        const isNew = r && typeof r === "object"
+          && ("id" in r) && ("date" in r) && ("minutes" in r) && ("amount" in r) && ("memo" in r)
+          && !("key" in r) && !("time" in r) && !("cash" in r) && !("count" in r) && !("ts" in r);
+
+        if (isNew) return {
+          id: String(r.id || uid()),
+          date: String(r.date || toDateStr(Date.now())),
+          minutes: num(r.minutes),
+          amount: num(r.amount),
+          memo: typeof r.memo === "string" ? r.memo : packMemo(r.memo)
+        };
+
+        // 旧形式 or 混在形式
+        const ts = (r && typeof r.ts === "number") ? r.ts : Date.now();
+        const key = r?.key ?? r?.classKey ?? "";
+        const time = num(r?.time ?? r?.minutes);
+        const cash = num(r?.cash);
+        const count = num(r?.count);
+
+        const memoObj = Object.assign(
+          {},
+          (r && r.memo ? unpackMemo(r.memo) : {}),
+          {
+            key,
+            time,
+            cash,
+            count,
+            ts
+          }
+        );
+
+        return {
+          id: String(r?.id || uid()),
+          date: toDateStr(ts),
+          minutes: time,
+          amount: num(r?.amount),
+          memo: packMemo(memoObj)
+        };
+      };
+
+      // 新形式runsLog -> 現行UI用の「表示/計算用」行に復元（DOM依存なし）
+      const toUiRun = (r) => {
+        const memo = unpackMemo(r?.memo);
+        const ts = (typeof memo.ts === "number") ? memo.ts : Date.now();
+
+        return {
+          id: String(r?.id || uid()),
+          key: memo.key || "custom",
+          amount: num(r?.amount),
+          time: num(r?.minutes),       // minutesをtimeとして扱う（UI互換）
+          cash: num(memo.cash),
+          count: num(memo.count) || 0,
+          ts
+        };
+      };
+
+      // 集計（uiRunsを食う）
+      const aggregateFromUiRuns = (uiRuns) => {
+        const agg = {
+          runs:      { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+          delivered: { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+          amounts:   { "1500": 0, "1000": 0, "600": 0, custom: 0 },
+          times:     { "1500": 0, "1000": 0, "600": 0, custom: 0 }
+        };
+
+        for (const r of uiRuns) {
+          const k = r.key;
+          if (!(k in agg.runs)) continue;
+          agg.runs[k] += 1;
+          agg.delivered[k] += (r.count || 0);
+          agg.amounts[k] += (r.amount || 0);
+          agg.times[k] += (r.time || 0);
+        }
+        return agg;
+      };
+
+      // cashは「state.cash」を正として扱うけど、編集/削除時は差分計算が必要
+      const getCashFromNewEntry = (entry) => {
+        const memo = unpackMemo(entry?.memo);
+        return num(memo.cash);
+      };
+
+      const getCountFromNewEntry = (entry) => {
+        const memo = unpackMemo(entry?.memo);
+        return num(memo.count);
+      };
+
+      const getKeyFromNewEntry = (entry) => {
+        const memo = unpackMemo(entry?.memo);
+        return memo.key || "custom";
+      };
+
+      const getTsFromNewEntry = (entry) => {
+        const memo = unpackMemo(entry?.memo);
+        return (typeof memo.ts === "number") ? memo.ts : Date.now();
+      };
+
+      const updateNewEntryMemo = (entry, patch) => {
+        const memo = unpackMemo(entry?.memo);
+        const next = Object.assign({}, memo, patch);
+        return Object.assign({}, entry, { memo: packMemo(next) });
+      };
+
+      return {
+        num,
+        uid,
+        migrateRunsLogEntry,
+        toUiRun,
+        aggregateFromUiRuns,
+        getCashFromNewEntry,
+        getCountFromNewEntry,
+        getKeyFromNewEntry,
+        getTsFromNewEntry,
+        updateNewEntryMemo,
+        packMemo,
+        unpackMemo,
+        toDateStr
+      };
+    })();
+
+    // =========================
+    // store（localStorage直書き禁止）
+    // =========================
+const store = (() => {
+  const baseState = { runsLog: [], quest: 0, cash: 0, note: "" };
+
+  const tryLoad = (key) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw);
+      const s = Object.assign({}, baseState, parsed);
+
+      const list = Array.isArray(s.runsLog) ? s.runsLog : [];
+      s.runsLog = list.map(core.migrateRunsLogEntry);
+
+      s.quest = core.num(s.quest);
+      s.cash  = core.num(s.cash);
+      s.note  = (s.note ?? "").toString();
+
+      return s;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const load = () => {
+    // まず新キー
+    let s = tryLoad(STATE_KEY);
+
+    // なければ旧キーを順に探す
+    if (!s) {
+      for (const k of (LEGACY_KEYS || [])) {
+        s = tryLoad(k);
+        if (s) break;
       }
-      return agg;
     }
 
+    return s || Object.assign({}, baseState);
+  };
+
+  const save = (state) => {
+    const s = Object.assign({}, baseState, state);
+
+    const list = Array.isArray(s.runsLog) ? s.runsLog : [];
+    s.runsLog = list.map(core.migrateRunsLogEntry);
+
+    s.quest = core.num(s.quest);
+    s.cash  = core.num(s.cash);
+    s.note  = (s.note ?? "").toString();
+
+    try {
+      localStorage.setItem(STATE_KEY, JSON.stringify(s));
+    } catch(e) {}
+  };
+
+  return { load, save };
+})();
+
+      const save = (state) => {
+        // 保存前に runsLog を「型固定」に再整形（保険）
+        const s = Object.assign({}, state);
+        const list = Array.isArray(s.runsLog) ? s.runsLog : [];
+        s.runsLog = list.map(core.migrateRunsLogEntry);
+
+        try {
+          localStorage.setItem(STATE_KEY, JSON.stringify(s));
+        } catch(e) {}
+      };
+
+      return { load, save };
+    })();
+
+    // =========================
+    // state（アプリの唯一の状態）
+    // =========================
+    let state = store.load();
+
+    const el = (id) => document.getElementById(id);
+
+    // =========================
+    // UI更新（coreの結果をDOMへ）
+    // =========================
     function calcTotals() {
-      const a = aggregateFromLog();
+      // runsLog（新形式） -> UI用に復元して集計
+      const uiRuns = state.runsLog.map(core.toUiRun);
+      const a = core.aggregateFromUiRuns(uiRuns);
 
       const totalRuns =
         a.runs["1500"] + a.runs["1000"] + a.runs["600"] + a.runs.custom;
@@ -608,7 +807,7 @@
       const totalClassAmount =
         a.amounts["1500"] + a.amounts["1000"] + a.amounts["600"] + a.amounts.custom;
 
-      const totalAmount = totalClassAmount + (state.quest || 0); // 現金は含めない
+      const totalAmount = totalClassAmount + (state.quest || 0);
 
       el("totalRuns").textContent = totalRuns.toString();
       el("totalDeliveries").textContent = totalDeliveries.toString();
@@ -662,24 +861,28 @@
       ["600","1000","1500","custom"].forEach(renderRunListIfOpen);
     }
 
+    // =========================
+    // 追加（runsLogは新型で保存）
+    // =========================
     function addClassRun(key) {
-      const amount = num(el("inputAmount" + key).value);
-      const time   = num(el("inputTime" + key).value);
-      const cash   = num(el("inputCash" + key).value);
-      const count  = num(el("inputCount" + key).value);
+      const amount = core.num(el("inputAmount" + key).value);
+      const time   = core.num(el("inputTime" + key).value);
+      const cash   = core.num(el("inputCash" + key).value);
+      const count  = core.num(el("inputCount" + key).value);
 
       if (count <= 0) return;
       if (amount <= 0) return;
 
-      state.runsLog.push({
-        id: uid(),
-        key,
-        amount,
-        time,
-        cash,
-        count,
-        ts: Date.now()
-      });
+      const ts = Date.now();
+      const entry = {
+        id: core.uid(),
+        date: core.toDateStr(ts),
+        minutes: time,
+        amount: amount,
+        memo: core.packMemo({ key, cash, count, ts, time })
+      };
+
+      state.runsLog.push(entry);
 
       if (cash > 0) state.cash += cash;
 
@@ -687,28 +890,29 @@
       el("inputTime" + key).value   = "";
       el("inputCash" + key).value   = "";
 
-      saveState();
+      store.save(state);
       calcTotals();
     }
 
     function addCustom() {
-      const amount = num(el("inputCustomAmount").value);
-      const time   = num(el("inputCustomTime").value);
-      const cash   = num(el("inputCustomCash").value);
-      const count  = num(el("inputCustomCount").value);
+      const amount = core.num(el("inputCustomAmount").value);
+      const time   = core.num(el("inputCustomTime").value);
+      const cash   = core.num(el("inputCustomCash").value);
+      const count  = core.num(el("inputCustomCount").value);
 
       if (count <= 0) return;
       if (amount <= 0) return;
 
-      state.runsLog.push({
-        id: uid(),
-        key: "custom",
-        amount,
-        time,
-        cash,
-        count,
-        ts: Date.now()
-      });
+      const ts = Date.now();
+      const entry = {
+        id: core.uid(),
+        date: core.toDateStr(ts),
+        minutes: time,
+        amount: amount,
+        memo: core.packMemo({ key: "custom", cash, count, ts, time })
+      };
+
+      state.runsLog.push(entry);
 
       if (cash > 0) state.cash += cash;
 
@@ -716,109 +920,120 @@
       el("inputCustomTime").value   = "";
       el("inputCustomCash").value   = "";
 
-      saveState();
+      store.save(state);
       calcTotals();
     }
 
     function addQuest() {
-      const q = num(el("inputQuest").value);
+      const q = core.num(el("inputQuest").value);
       if (q <= 0) return;
       state.quest += q;
       el("inputQuest").value = "";
-      saveState();
+      store.save(state);
       calcTotals();
     }
 
     function addCash() {
-      const c = num(el("inputCash").value);
+      const c = core.num(el("inputCash").value);
       if (c <= 0) return;
       state.cash += c;
       el("inputCash").value = "";
-      saveState();
+      store.save(state);
       calcTotals();
     }
 
     function resetAll() {
       if (!confirm("本当に今日の記録を全部リセットしますか？")) return;
       state = { runsLog: [], quest: 0, cash: 0, note: "" };
-      saveState();
+      store.save(state);
       calcTotals();
     }
 
-    // ===== 配達済みリスト =====
-function toggleRunList(key) {
-  const box = el("runList" + key);
-  if (!box) return;
+    // =========================
+    // 配達済みリスト（開いた時だけ描画）
+    // =========================
+    function toggleRunList(key) {
+      const box = el("runList" + key);
+      if (!box) return;
 
-  const willOpen = !box.classList.contains("open");
-  box.classList.toggle("open");
+      const willOpen = !box.classList.contains("open");
+      box.classList.toggle("open");
 
-  // 開くときだけ描画（軽い）
-  if (willOpen) renderRunList(key);
-}
+      if (willOpen) renderRunList(key);
+    }
 
-function renderRunListIfOpen(key) {
-  const box = el("runList" + key);
-  if (!box) return;
-  if (box.classList.contains("open")) renderRunList(key);
-}
+    function renderRunListIfOpen(key) {
+      const box = el("runList" + key);
+      if (!box) return;
+      if (box.classList.contains("open")) renderRunList(key);
+    }
 
-function renderRunList(key) {
-  const box = el("runList" + key);
-  if (!box) return;
+    // 重すぎ対策：描画上限（UIは変えず、内部だけ軽く）
+    const MAX_RENDER_PER_CLASS = 300;
 
-  const list = state.runsLog
-    .filter(r => r.key === key)
-    .sort((a,b) => (b.ts || 0) - (a.ts || 0));
+    function renderRunList(key) {
+      const box = el("runList" + key);
+      if (!box) return;
 
-  if (list.length === 0) {
-    box.innerHTML = `<div class="label">まだこのクラスの配達記録はありません。</div>`;
-    return;
-  }
+      // 新形式->UI形式へ復元してからフィルタ
+      const uiRuns = state.runsLog.map(core.toUiRun);
 
-  box.innerHTML = list.map(r => {
-    const d = new Date(r.ts || Date.now());
-    const stamp = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-    return `
-      <div class="run-item" data-id="${r.id}">
-        <div class="mini">
-          <span>${stamp}</span>
-          <span>ID: ${r.id.slice(-6)}</span>
-        </div>
+      const list = uiRuns
+        .filter(r => r.key === key)
+        .sort((a,b) => (b.ts || 0) - (a.ts || 0))
+        .slice(0, MAX_RENDER_PER_CLASS);
 
-        <div class="grid">
-          <div>
-            <div class="label">金額</div>
-            <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.amount || 0}" data-f="amount" />
+      if (list.length === 0) {
+        box.innerHTML = `<div class="label">まだこのクラスの配達記録はありません。</div>`;
+        return;
+      }
+
+      box.innerHTML = list.map(r => {
+        const d = new Date(r.ts || Date.now());
+        const stamp = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+        return `
+          <div class="run-item" data-id="${r.id}">
+            <div class="mini">
+              <span>${stamp}</span>
+              <span>ID: ${r.id.slice(-6)}</span>
+            </div>
+
+            <div class="grid">
+              <div>
+                <div class="label">金額</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.amount || 0}" data-f="amount" />
+              </div>
+              <div>
+                <div class="label">時間(分)</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.time || 0}" data-f="time" />
+              </div>
+              <div>
+                <div class="label">現金</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.cash || 0}" data-f="cash" />
+              </div>
+              <div>
+                <div class="label">件数</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.count || 0}" data-f="count" />
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn-save" onclick="saveRunEdit('${r.id}')">保存</button>
+              <button class="btn-del" onclick="deleteRun('${r.id}')">削除</button>
+            </div>
           </div>
-          <div>
-            <div class="label">時間(分)</div>
-            <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.time || 0}" data-f="time" />
-          </div>
-          <div>
-            <div class="label">現金</div>
-            <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.cash || 0}" data-f="cash" />
-          </div>
-          <div>
-            <div class="label">件数</div>
-            <input type="text" inputmode="numeric" pattern="[0-9]*" value="${r.count || 0}" data-f="count" />
-          </div>
-        </div>
+        `;
+      }).join("");
+    }
 
-        <div class="actions">
-          <button class="btn-save" onclick="saveRunEdit('${r.id}')">保存</button>
-          <button class="btn-del" onclick="deleteRun('${r.id}')">削除</button>
-        </div>
-      </div>
-    `;
-  }).join("");
-}
-
+    // =========================
+    // 編集/削除（runsLog新型で保持）
+    // =========================
     function saveRunEdit(id) {
       const item = document.querySelector(`.run-item[data-id="${id}"]`);
       if (!item) return;
 
-      const get = (f) => num(item.querySelector(`[data-f="${f}"]`)?.value);
+      const get = (f) => core.num(item.querySelector(`[data-f="${f}"]`)?.value);
 
       const amount = get("amount");
       const time   = get("time");
@@ -831,12 +1046,27 @@ function renderRunList(key) {
       const idx = state.runsLog.findIndex(r => r.id === id);
       if (idx < 0) return;
 
-      const prevCash = state.runsLog[idx].cash || 0;
+      const prevCash = core.getCashFromNewEntry(state.runsLog[idx]);
       state.cash += (cash - prevCash);
 
-      state.runsLog[idx] = Object.assign({}, state.runsLog[idx], { amount, time, cash, count });
+      // minutes/amountは新型の正規フィールド、key/cash/count/ts/timeはmemoへ
+      const prev = state.runsLog[idx];
+      const ts = core.getTsFromNewEntry(prev); // 既存のタイムスタンプは保持
+      const key = core.getKeyFromNewEntry(prev);
 
-      saveState();
+      let next = {
+        id: prev.id,
+        date: prev.date,
+        minutes: time,
+        amount: amount,
+        memo: prev.memo
+      };
+
+      next = core.updateNewEntryMemo(next, { key, cash, count, ts, time });
+
+      state.runsLog[idx] = next;
+
+      store.save(state);
       calcTotals();
     }
 
@@ -844,21 +1074,22 @@ function renderRunList(key) {
       const idx = state.runsLog.findIndex(r => r.id === id);
       if (idx < 0) return;
 
-      const prevCash = state.runsLog[idx].cash || 0;
+      const prevCash = core.getCashFromNewEntry(state.runsLog[idx]);
       state.cash -= prevCash;
       if (state.cash < 0) state.cash = 0;
 
       state.runsLog.splice(idx, 1);
-      saveState();
+      store.save(state);
       calcTotals();
     }
 
     el("dailyNote").addEventListener("input", () => {
       state.note = el("dailyNote").value;
-      saveState();
+      store.save(state);
     });
 
-    loadState();
+    // 初回：ロード後に再保存（移行があったらここで確定）
+    store.save(state);
     calcTotals();
   </script>
 </body>

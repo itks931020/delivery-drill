@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>配達ドリルトラッカー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #050816;
+      --card: #141a2b;
+      --accent: #3ba9ff;
+      --accent-soft: #234567;
+      --gold: #ffd700;
+      --text: #f5f5f5;
+      --muted: #9ca3af;
+      --danger: #f97373;
+
+      --ok: #22c55e;
+      --cyan: #06b6d4;
+      --orange: #f97316;
+      --yellow: #facc15;
+      --red: #ef4444;
+      --slate: #334155;
+      --slate2: #0f172a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 12px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #182848 0, #050816 55%, #02030a 100%);
+      color: var(--text);
+    }
+
+    h1 { font-size: 20px; margin: 0 0 4px; }
+    .sub { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+
+    .card {
+      background: linear-gradient(135deg, rgba(20,26,43,0.95), rgba(9,12,24,0.98));
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 18px 35px rgba(0,0,0,0.8);
+      border: 1px solid rgba(59,169,255,0.1);
+      backdrop-filter: blur(10px);
+      margin-bottom: 10px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .dash-item {
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(15,23,42,0.8);
+      border: 1px solid rgba(148,163,184,0.2);
+      min-height: 54px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .dash-label { font-size: 10px; color: var(--muted); }
+    .dash-value { font-size: 16px; font-weight: 650; }
+
+    .top-stack {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .top-row {
+      padding: 10px 10px;
+      border-radius: 12px;
+      background: radial-gradient(circle at top, #3b82f6 0, #020617 55%);
+      border: 1px solid rgba(59,130,246,0.5);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .top-row .label { font-size: 12px; color: #e5e7eb; text-align: center; }
+    .top-row .value {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+      margin-top: 2px;
+      display: inline-block;
+    }
+    .value.tier-0 { color: #f5f5f5; }
+    .value.tier-1 { color: #f8fafc; text-shadow: 0 1px 0 rgba(255,255,255,0.10); font-weight: 820; }
+    .value.tier-2 { color: #fde68a; }
+    .value.tier-3 { color: #facc15; }
+    .value.tier-4 {
+      color: var(--gold);
+      text-shadow:
+        0 0 8px rgba(255,215,0,0.25),
+        0 0 16px rgba(255,215,0,0.22);
+    }
+
+    /* キラキラ（素材なし） */
+    .sparkle::before, .sparkle::after {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle, rgba(255,255,255,0.20) 0 2px, transparent 3px) 0 0 / 80px 80px,
+        radial-gradient(circle, rgba(255,215,0,0.18) 0 2px, transparent 3px) 40px 20px / 90px 90px;
+      transform: rotate(12deg);
+      animation: sparkleMove 3.2s linear infinite;
+      pointer-events: none;
+      opacity: 0.75;
+    }
+    .sparkle::after {
+      animation-duration: 4.6s;
+      opacity: 0.45;
+      transform: rotate(-8deg);
+    }
+    @keyframes sparkleMove {
+      from { transform: translate3d(-8%, -6%, 0) rotate(10deg); }
+      to   { transform: translate3d( 8%,  6%, 0) rotate(10deg); }
+    }
+
+    .goal-met {
+      border-color: rgba(250,204,21,0.75) !important;
+      box-shadow: 0 18px 35px rgba(250,204,21,0.10), 0 0 18px rgba(250,204,21,0.12) inset;
+    }
+
+    .mid-row {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(15,23,42,0.8);
+      border: 1px solid rgba(148,163,184,0.22);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .mid-row .k { font-size: 12px; color: var(--muted); }
+    .mid-row .v { font-size: 18px; font-weight: 750; }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+      align-items: stretch;
+    }
+    .row > div { flex: 1; }
+
+    input[type="text"], select, textarea {
+      width: 100%;
+      padding: 8px 9px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      font-size: 12px;
+      outline: none;
+    }
+    input::placeholder { color: #6b7280; }
+
+    /* iPhoneの入力ズーム対策：focus中だけ16px（viewport禁止は使わない） */
+    input[type="text"]:focus, textarea:focus, select:focus { font-size: 16px; }
+
+    .label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+
+    button {
+      width: 100%;
+      padding: 8px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(90deg, var(--ok), var(--cyan));
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      box-shadow: 0 8px 18px rgba(16,185,129,0.55);
+      cursor: pointer;
+      margin-top: 4px;
+    }
+    button:active {
+      transform: translateY(1px);
+      box-shadow: 0 4px 10px rgba(16,185,129,0.45);
+    }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 4px; }
+    .btn-row button { width: 100%; font-size: 12px; padding: 7px; margin-top: 0; }
+
+    .btn-quest {
+      background: linear-gradient(90deg, #3b82f6, #06b6d4);
+      box-shadow: 0 8px 18px rgba(59,130,246,0.55);
+    }
+    .btn-cash {
+      background: linear-gradient(90deg, #f97316, #facc15);
+      box-shadow: 0 8px 18px rgba(249,115,22,0.55);
+    }
+    .btn-goal {
+      background: linear-gradient(90deg, #a855f7, #3b82f6);
+      box-shadow: 0 8px 18px rgba(168,85,247,0.38);
+    }
+    .btn-muted {
+      background: linear-gradient(90deg, #64748b, #334155);
+      box-shadow: 0 8px 18px rgba(100,116,139,0.35);
+    }
+    .btn-danger {
+      background: linear-gradient(90deg, #ef4444, #f97316);
+      box-shadow: 0 8px 18px rgba(239,68,68,0.4);
+    }
+
+    .center-title {
+      text-align: center;
+      font-weight: 900;
+      font-size: 20px;
+      letter-spacing: 0.6px;
+      margin: 2px 0 8px;
+    }
+
+    /* オンライン/オフライン切替（見た目は軽め） */
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(2,6,23,0.35);
+      border: 1px solid rgba(148,163,184,0.22);
+      margin-top: 6px;
+    }
+    .toggle .tlabel { font-size: 12px; color: var(--muted); }
+    .seg {
+      display: flex;
+      gap: 6px;
+      background: rgba(15,23,42,0.7);
+      border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 999px;
+      padding: 4px;
+    }
+    .seg button {
+      margin: 0;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      box-shadow: none;
+      background: transparent;
+      color: #cbd5e1;
+      border: 1px solid transparent;
+    }
+    .seg button.active {
+      background: linear-gradient(90deg, #22c55e, #06b6d4);
+      color: #ffffff;
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    /* 配達済みリスト */
+    .runlist{
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      margin-top: 0;
+      padding: 0 8px;
+      border: 1px solid rgba(148,163,184,0.0);
+      border-radius: 12px;
+      background: rgba(2,6,23,0.35);
+      transition: max-height .22s ease, opacity .18s ease, margin-top .18s ease, border-color .18s ease, padding .18s ease;
+      will-change: max-height, opacity;
+    }
+    .runlist.open{
+      max-height: 1400px;
+      opacity: 1;
+      margin-top: 8px;
+      padding: 8px;
+      border-color: rgba(148,163,184,0.22);
+    }
+
+    .run-item {
+      border: 1px solid rgba(148,163,184,0.18);
+      border-radius: 12px;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: rgba(15,23,42,0.65);
+    }
+    .run-item:last-child { margin-bottom: 0; }
+
+    .run-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .run-head .left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .run-head .stamp { font-size: 11px; color: #cbd5e1; }
+    .run-head .mini { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .run-head .caret {
+      font-size: 14px;
+      color: #cbd5e1;
+      opacity: 0.9;
+      flex: 0 0 auto;
+    }
+
+    .run-body {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height .18s ease, opacity .18s ease, margin-top .18s ease;
+      margin-top: 0;
+    }
+    .run-item.open {
+      background: rgba(59,130,246,0.12);
+      border-color: rgba(59,130,246,0.38);
+    }
+    .run-item.open .run-body {
+      max-height: 520px;
+      opacity: 1;
+      margin-top: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 6px;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .actions button {
+      margin-top: 0;
+      padding: 7px;
+      font-size: 12px;
+    }
+
+    /* トースト */
+    .toast {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.78);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 13px;
+      z-index: 99998;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .18s ease, transform .18s ease;
+      pointer-events: none;
+      white-space: pre-wrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* デバッグ（エラー時のみ表示） */
+    #debugBox {
+      display: none;
+      position:fixed;
+      left:8px;
+      right:8px;
+      bottom:8px;
+      max-height:40vh;
+      overflow:auto;
+      padding:10px;
+      border-radius:12px;
+      background:rgba(0,0,0,0.75);
+      color:#fff;
+      font-size:12px;
+      z-index:99999;
+      white-space:pre-wrap;
+    }
+    #debugBox.show { display:block; }
+  </style>
+</head>
+
+<body>
+  <h1>配達ドリルトラッカー</h1>
+  <div class="sub">午前4時で日付が切り替わる（Uberの締めに合わせる）。金額・時間・件数は手打ち。</div>
+
+  <!-- 上部：4メニュー -->
+  <div class="card">
+    <div class="dashboard-grid">
+      <div class="dash-item">
+        <div class="dash-label">クエスト合計</div>
+        <div class="dash-value">¥<span id="questTotalTop">0</span></div>
+      </div>
+      <div class="dash-item">
+        <div class="dash-label">現金回収合計</div>
+        <div class="dash-value">¥<span id="cashTotalTop">0</span></div>
+      </div>
+      <div class="dash-item">
+        <div class="dash-label">目標回数</div>
+        <div class="dash-value"><span id="targetRunsTop">なし</span></div>
+      </div>
+      <div class="dash-item">
+        <div class="dash-label">目標金額</div>
+        <div class="dash-value"><span id="targetAmountTop">なし</span></div>
+      </div>
+    </div>
+
+    <!-- 目標入力 -->
+    <div class="row" style="margin-top:2px;">
+      <div>
+        <div class="label">目標回数（任意）</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetRuns" placeholder="未設定でもOK" />
+      </div>
+      <div>
+        <div class="label">目標金額（任意・円）</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetAmount" placeholder="未設定でもOK" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-goal" onclick="setGoals()">目標設定</button>
+      <button class="btn-muted" onclick="clearGoals()">目標クリア</button>
+    </div>
+  </div>
+
+  <!-- 上部：総売上/配達回数/オンライン時給 -->
+  <div class="card" id="topSummaryCard">
+    <div class="top-stack">
+      <div id="totalRow" class="top-row">
+        <div class="label" id="totalLabel">総売上 (クエスト込み・現金除外)</div>
+        <div class="value tier-0" id="totalAmount">¥0</div>
+      </div>
+
+      <div class="mid-row" id="prevRow" style="display:none;">
+        <div class="k">前日売上</div>
+        <div class="v" id="prevSummary">¥0 / 0回</div>
+      </div>
+
+      <div class="mid-row" id="runsRow">
+        <div class="k">配達回数</div>
+        <div class="v" id="runsSummary">0回</div>
+      </div>
+
+      <div class="mid-row" id="onlineRow">
+        <div class="k">オンライン時給換算</div>
+        <div class="v" id="onlineHourly">¥0/h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 配達案件（入力1本化） -->
+  <div class="card">
+    <div class="center-title">配達案件</div>
+
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <div class="label">金額 (円)</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320" />
+      </div>
+      <div>
+        <div class="label">時間 (分)</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTime" placeholder="例: 28" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <div class="label">現金回収 (円)</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCash" placeholder="例: 300" />
+      </div>
+      <div>
+        <div class="label">件数 (件)</div>
+        <select id="inputCount">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <div class="label">走行距離（任意・km）</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputDistance" placeholder="未入力でもOK" />
+      </div>
+      <div>
+        <div class="label">　</div>
+        <div class="toggle">
+          <div class="tlabel">稼働</div>
+          <div class="seg" role="group" aria-label="online toggle">
+            <button type="button" id="btnOnline" class="active" onclick="setOnline(true)">オンライン</button>
+            <button type="button" id="btnOffline" onclick="setOnline(false)">オフライン</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:6px;">
+      <button class="btn-muted" onclick="toggleRunList()">配達済み</button>
+      <button onclick="addRun()">追加</button>
+    </div>
+
+    <div id="runList" class="runlist"></div>
+  </div>
+
+  <!-- クエスト & 現金回収 & メモ -->
+  <div class="card">
+    <div class="center-title" style="font-size:16px;">クエスト & 今日のメモ & 現金回収</div>
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <div class="label">クエスト金額 (円)</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputQuest" placeholder="例: 1200" />
+      </div>
+      <div>
+        <div class="label">現金回収 (円)</div>
+        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashOnly" placeholder="例: 500" />
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-quest" onclick="addQuest()">クエストを追加</button>
+      <button class="btn-cash" onclick="addCashOnly()">現金回収を追加</button>
+    </div>
+    <div class="label" style="margin-top:6px;">今日のメモ（雨 / 休日 / ブースト など）</div>
+    <textarea id="dailyNote" placeholder="例: 雨クエ中 / 夕方からブースト強め など"></textarea>
+  </div>
+
+  <!-- リセット -->
+  <div class="card" style="text-align:center;">
+    <div class="label" style="margin-bottom:4px;">今日の記録を全部リセット</div>
+    <button class="btn-danger" onclick="resetAll()" style="max-width:260px; margin:0 auto;">
+      全リセット（件数・金額・メモ）
+    </button>
+  </div>
+
+  <!-- 更新 -->
+  <div class="card" style="text-align:center; margin-bottom:24px;">
+    <div class="label" style="margin-bottom:4px;">コード更新後に押す用</div>
+    <button onclick="location.reload()" style="max-width:260px; margin:0 auto;">
+      ページを更新（最新コードを読み込む）
+    </button>
+  </div>
+
+  <pre id="debugBox"></pre>
+  <div id="toast" class="toast"></div>
+
+  <script>
+/**
+ * delivery drill tracker v10 (single input, 4am boundary, goals, prev day, list accordion)
+ */
+(() => {
+  // ===== Debug box: show only on error (enable manual by localStorage DDT_DEBUG=true) =====
+  const debugBox = document.getElementById("debugBox");
+  const DEBUG_ALWAYS = (localStorage.getItem("DDT_DEBUG") === "true");
+  const showDebug = () => debugBox.classList.add("show");
+  const log = (msg) => { debugBox.textContent += msg + "\n"; };
+
+  if (DEBUG_ALWAYS) showDebug();
+
+  window.onerror = (m, src, line, col) => {
+    showDebug();
+    log("❌ window.onerror");
+    log(String(m));
+    log(`${src || ""}  ${line}:${col}`);
+  };
+  window.addEventListener("unhandledrejection", (e) => {
+    showDebug();
+    log("❌ unhandledrejection");
+    log(String(e.reason));
+  });
+
+  // ===== Helpers =====
+  const el = (id) => document.getElementById(id);
+
+  const num = (v) => {
+    const s = (v ?? "").toString().replace(/[^\d-]/g, "");
+    const n = parseInt(s || "0", 10);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const uid = () => "r_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+
+  const toDateStr = (ts) => {
+    const d = new Date(ts || Date.now());
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const day = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  };
+
+  // 4:00 boundary business day key
+  const businessDayKey = (ts) => {
+    const d = new Date(ts);
+    const h = d.getHours();
+    const base = new Date(d);
+    if (h < 4) base.setDate(base.getDate() - 1);
+    return toDateStr(base.getTime());
+  };
+
+  const businessWindow = (dayKey) => {
+    const [y,m,dd] = dayKey.split("-").map(x => parseInt(x,10));
+    const start = new Date(y, m-1, dd, 4, 0, 0, 0).getTime();
+    const end = start + 24*60*60*1000;
+    return { start, end };
+  };
+
+  const formatStamp = (ts) => {
+    const d = new Date(ts);
+    return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  };
+
+  const yen = (n) => (num(n)).toLocaleString();
+
+  const calcRates = (amount, minutes) => {
+    const t = num(minutes);
+    const a = num(amount);
+    if (t <= 0) return { perMin: 0, perHour: 0 };
+    const perMin = Math.round(a / t);
+    const perHour = Math.round(a / (t / 60));
+    return { perMin, perHour };
+  };
+
+  // ===== Store =====
+  const STATE_KEY = "deliveryDrillState_v10_single";
+  const baseState = {
+    runsLog: [],
+    questLog: [],
+    cashOnlyLog: [],
+    note: "",
+    goals: { runs: null, amount: null }
+  };
+
+  const load = () => {
+    try {
+      const raw = localStorage.getItem(STATE_KEY);
+      if (!raw) return structuredClone(baseState);
+      const s = Object.assign({}, baseState, JSON.parse(raw));
+
+      s.runsLog = Array.isArray(s.runsLog) ? s.runsLog : [];
+      s.questLog = Array.isArray(s.questLog) ? s.questLog : [];
+      s.cashOnlyLog = Array.isArray(s.cashOnlyLog) ? s.cashOnlyLog : [];
+      s.note = (s.note ?? "").toString();
+
+      const g = s.goals || {};
+      s.goals = {
+        runs: (g.runs === null || g.runs === undefined || g.runs === "") ? null : num(g.runs),
+        amount: (g.amount === null || g.amount === undefined || g.amount === "") ? null : num(g.amount)
+      };
+
+      s.runsLog = s.runsLog.map(r => ({
+        id: String(r.id || uid()),
+        ts: (typeof r.ts === "number") ? r.ts : Date.now(),
+        amount: num(r.amount),
+        minutes: num(r.minutes),
+        cash: num(r.cash),
+        count: num(r.count),
+        distance: num(r.distance),
+        online: (r.online === false) ? false : true
+      }));
+
+      s.questLog = s.questLog.map(q => ({
+        id: String(q.id || uid()),
+        ts: (typeof q.ts === "number") ? q.ts : Date.now(),
+        amount: num(q.amount)
+      }));
+
+      s.cashOnlyLog = s.cashOnlyLog.map(c => ({
+        id: String(c.id || uid()),
+        ts: (typeof c.ts === "number") ? c.ts : Date.now(),
+        amount: num(c.amount)
+      }));
+
+      return s;
+    } catch(e) {
+      return structuredClone(baseState);
+    }
+  };
+
+  const save = (s) => {
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(s)); } catch(e) {}
+  };
+
+  let state = load();
+
+  // ===== Online toggle for next add =====
+  let addOnline = true;
+  function setOnline(v) {
+    addOnline = !!v;
+    el("btnOnline").classList.toggle("active", addOnline);
+    el("btnOffline").classList.toggle("active", !addOnline);
+  }
+
+  // ===== Toast =====
+  let toastTimer = null;
+  const showToast = (msg) => {
+    const t = el("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), 5000);
+  };
+
+  // ===== Aggregation by business day =====
+  function totalsForDay(dayKey) {
+    const { start, end } = businessWindow(dayKey);
+
+    const runs = state.runsLog.filter(r => r.ts >= start && r.ts < end);
+    const quest = state.questLog.filter(q => q.ts >= start && q.ts < end);
+    const cashOnly = state.cashOnlyLog.filter(c => c.ts >= start && c.ts < end);
+
+    const runsCount = runs.length;
+    const deliveries = runs.reduce((acc,r) => acc + (r.count || 0), 0);
+    const minutesTotal = runs.reduce((acc,r) => acc + (r.minutes || 0), 0);
+
+    const classAmount = runs.reduce((acc,r) => acc + (r.amount || 0), 0);
+    const questAmount = quest.reduce((acc,q) => acc + (q.amount || 0), 0);
+    const totalAmount = classAmount + questAmount;
+
+    const cashFromRuns = runs.reduce((acc,r) => acc + (r.cash || 0), 0);
+    const cashManual = cashOnly.reduce((acc,c) => acc + (c.amount || 0), 0);
+    const cashTotal = cashFromRuns + cashManual;
+
+    const onlineRuns = runs.filter(r => r.online !== false);
+    const onlineMinutes = onlineRuns.reduce((acc,r) => acc + (r.minutes || 0), 0);
+    const onlineAmountFromRuns = onlineRuns.reduce((acc,r) => acc + (r.amount || 0), 0);
+    const onlineQuest = questAmount;
+    const onlineAmount = onlineAmountFromRuns + onlineQuest;
+
+    return {
+      runs, quest, cashOnly,
+      runsCount, deliveries, minutesTotal,
+      classAmount, questAmount, totalAmount,
+      cashTotal,
+      onlineMinutes, onlineAmount
+    };
+  }
+
+  function getTier(amount) {
+    const a = num(amount);
+    if (a >= 23000) return 4;
+    if (a >= 15000) return 3;
+    if (a >= 10000) return 2;
+    if (a >= 5000)  return 1;
+    return 0;
+  }
+
+  function goalsAchieved(dayTotals) {
+    const tr = state.goals.runs;
+    const ta = state.goals.amount;
+    const needRuns = (tr !== null && tr > 0);
+    const needAmt  = (ta !== null && ta > 0);
+
+    if (!needRuns && !needAmt) return false;
+
+    const okRuns = !needRuns || (dayTotals.runsCount >= tr);
+    const okAmt  = !needAmt  || (dayTotals.totalAmount >= ta);
+
+    return okRuns && okAmt;
+  }
+
+  // ===== UI update =====
+  function renderTop() {
+    const nowKey = businessDayKey(Date.now());
+    const today = totalsForDay(nowKey);
+
+    const prevKey = (() => {
+      const { start } = businessWindow(nowKey);
+      const prevTs = start - 1000;
+      return businessDayKey(prevTs);
+    })();
+    const prev = totalsForDay(prevKey);
+
+    el("questTotalTop").textContent = yen(today.questAmount);
+    el("cashTotalTop").textContent  = yen(today.cashTotal);
+
+    el("targetRunsTop").textContent = (state.goals.runs && state.goals.runs > 0) ? `${state.goals.runs}回` : "なし";
+    el("targetAmountTop").textContent = (state.goals.amount && state.goals.amount > 0) ? `¥${yen(state.goals.amount)}` : "なし";
+
+    const tier = getTier(today.totalAmount);
+    const totalEl = el("totalAmount");
+    totalEl.textContent = `¥${yen(today.totalAmount)}`;
+    totalEl.classList.remove("tier-0","tier-1","tier-2","tier-3","tier-4");
+    totalEl.classList.add(`tier-${tier}`);
+
+    const totalRow = el("totalRow");
+    totalRow.classList.toggle("sparkle", tier >= 4);
+
+    const prevHas = (prev.totalAmount > 0) || (prev.runsCount > 0);
+    el("prevRow").style.display = prevHas ? "flex" : "none";
+    el("prevSummary").textContent = `¥${yen(prev.totalAmount)} / ${prev.runsCount}回`;
+
+    const tr = state.goals.runs;
+    el("runsSummary").textContent = (tr && tr > 0) ? `${today.runsCount} / ${tr}回` : `${today.runsCount}回`;
+
+    const r = calcRates(today.onlineAmount, today.onlineMinutes);
+    el("onlineHourly").textContent = `¥${yen(r.perHour)}/h`;
+
+    const met = goalsAchieved(today);
+    el("topSummaryCard").classList.toggle("goal-met", met);
+    totalRow.classList.toggle("goal-met", met);
+  }
+
+  // ===== Run list (accordion) =====
+  function toggleRunList() {
+    const box = el("runList");
+    box.classList.toggle("open");
+    if (box.classList.contains("open")) renderRunList();
+  }
+
+  function renderRunList() {
+    const box = el("runList");
+    if (!box || !box.classList.contains("open")) return;
+
+    const nowKey = businessDayKey(Date.now());
+    const today = totalsForDay(nowKey);
+
+    const list = [...today.runs].sort((a,b) => (b.ts - a.ts)).slice(0, 300);
+
+    if (list.length === 0) {
+      box.innerHTML = `<div class="label">まだ配達記録はありません。</div>`;
+      return;
+    }
+
+    box.innerHTML = list.map(r => {
+      const stamp = formatStamp(r.ts);
+      const total = num(r.amount);
+      const t = num(r.minutes);
+      const rates = calcRates(total, t);
+      const pm = rates.perMin ? `¥${yen(rates.perMin)}/分` : `-`;
+      const ph = rates.perHour ? `¥${yen(rates.perHour)}/h` : `-`;
+      const onlineTag = (r.online !== false) ? "オンライン" : "オフライン";
+      const sub = `${onlineTag}｜件数:${num(r.count)}｜現金:${yen(r.cash)}｜時給:${ph}｜分単価:${pm}`;
+
+      return `
+        <div class="run-item" data-id="${r.id}">
+          <div class="run-head" onclick="toggleRunItem('${r.id}')">
+            <div class="left">
+              <div class="stamp">${stamp}</div>
+              <div class="mini">${sub}</div>
+            </div>
+            <div class="caret">▾</div>
+          </div>
+
+          <div class="run-body">
+            <div class="grid">
+              <div>
+                <div class="label">金額</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${num(r.amount)}" data-f="amount" />
+              </div>
+              <div>
+                <div class="label">時間(分)</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${num(r.minutes)}" data-f="minutes" />
+              </div>
+              <div>
+                <div class="label">現金</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${num(r.cash)}" data-f="cash" />
+              </div>
+              <div>
+                <div class="label">件数</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${num(r.count)}" data-f="count" />
+              </div>
+              <div>
+                <div class="label">走行距離(km)</div>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" value="${num(r.distance)}" data-f="distance" />
+              </div>
+              <div>
+                <div class="label">稼働</div>
+                <select data-f="online">
+                  <option value="1" ${r.online !== false ? "selected" : ""}>オンライン</option>
+                  <option value="0" ${r.online === false ? "selected" : ""}>オフライン</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="btn-goal" onclick="saveRunEdit('${r.id}')">保存</button>
+              <button class="btn-danger" onclick="deleteRun('${r.id}')">削除</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function toggleRunItem(id) {
+    const item = document.querySelector(`.run-item[data-id="${id}"]`);
+    if (!item) return;
+    item.classList.toggle("open");
+    const caret = item.querySelector(".caret");
+    if (caret) caret.textContent = item.classList.contains("open") ? "▴" : "▾";
+  }
+
+  // ===== Add / Edit / Delete =====
+  function addRun() {
+    const amount = num(el("inputAmount").value);
+    const minutes = num(el("inputTime").value);
+    const cash = num(el("inputCash").value);
+    const count = num(el("inputCount").value);
+    const distance = num(el("inputDistance").value);
+
+    if (count <= 0) return;
+    if (amount <= 0) return;
+
+    const ts = Date.now();
+    const entry = {
+      id: uid(),
+      ts,
+      amount,
+      minutes,
+      cash,
+      count,
+      distance,
+      online: addOnline
+    };
+
+    state.runsLog.push(entry);
+
+    el("inputAmount").value = "";
+    el("inputTime").value = "";
+    el("inputCash").value = "";
+    el("inputDistance").value = "";
+
+    save(state);
+    renderTop();
+
+    if (el("runList").classList.contains("open")) renderRunList();
+
+    const dayKey = businessDayKey(ts);
+    const today = totalsForDay(dayKey);
+    const rate = calcRates(amount, minutes);
+    const msg =
+`おつかれ！あと何件やろう！
+今回: 時給 ¥${yen(rate.perHour)}/h / 分単価 ¥${yen(rate.perMin)}/分
+今日: 総売上 ¥${yen(today.totalAmount)} / 配達回数 ${today.runsCount}回`;
+    showToast(msg);
+  }
+
+  function saveRunEdit(id) {
+    const item = document.querySelector(`.run-item[data-id="${id}"]`);
+    if (!item) return;
+
+    const get = (f) => {
+      const node = item.querySelector(`[data-f="${f}"]`);
+      if (!node) return 0;
+      if (f === "online") return (node.value === "1");
+      return num(node.value);
+    };
+
+    const amount = get("amount");
+    const minutes = get("minutes");
+    const cash = get("cash");
+    const count = get("count");
+    const distance = get("distance");
+    const online = get("online");
+
+    if (count <= 0) return;
+    if (amount <= 0) return;
+
+    const idx = state.runsLog.findIndex(r => r.id === id);
+    if (idx < 0) return;
+
+    const prev = state.runsLog[idx];
+    state.runsLog[idx] = {
+      id: prev.id,
+      ts: prev.ts,
+      amount,
+      minutes,
+      cash,
+      count,
+      distance,
+      online
+    };
+
+    save(state);
+    renderTop();
+    renderRunList();
+  }
+
+  function deleteRun(id) {
+    const idx = state.runsLog.findIndex(r => r.id === id);
+    if (idx < 0) return;
+    state.runsLog.splice(idx, 1);
+    save(state);
+    renderTop();
+    renderRunList();
+  }
+
+  // ===== Quest / Cash only =====
+  function addQuest() {
+    const q = num(el("inputQuest").value);
+    if (q <= 0) return;
+    state.questLog.push({ id: uid(), ts: Date.now(), amount: q });
+    el("inputQuest").value = "";
+    save(state);
+    renderTop();
+    if (el("runList").classList.contains("open")) renderRunList();
+  }
+
+  function addCashOnly() {
+    const c = num(el("inputCashOnly").value);
+    if (c <= 0) return;
+    state.cashOnlyLog.push({ id: uid(), ts: Date.now(), amount: c });
+    el("inputCashOnly").value = "";
+    save(state);
+    renderTop();
+  }
+
+  // ===== Goals =====
+  function setGoals() {
+    const r = num(el("inputTargetRuns").value);
+    const a = num(el("inputTargetAmount").value);
+
+    const rawR = el("inputTargetRuns").value.trim();
+    const rawA = el("inputTargetAmount").value.trim();
+
+    if (rawR !== "") state.goals.runs = (r > 0) ? r : null;
+    if (rawA !== "") state.goals.amount = (a > 0) ? a : null;
+
+    el("inputTargetRuns").value = "";
+    el("inputTargetAmount").value = "";
+
+    save(state);
+    renderTop();
+
+    const nowKey = businessDayKey(Date.now());
+    const today = totalsForDay(nowKey);
+    if (goalsAchieved(today)) {
+      showToast("目標達成！！！！！✨\n今日は勝ち。");
+    }
+  }
+
+  function clearGoals() {
+    state.goals = { runs: null, amount: null };
+    save(state);
+    renderTop();
+  }
+
+  // ===== Reset =====
+  function resetAll() {
+    if (!confirm("本当に今日の記録を全部リセットしますか？（※4時区切りの『今日』だけ消える）")) return;
+
+    const todayKey = businessDayKey(Date.now());
+    const { start, end } = businessWindow(todayKey);
+
+    state.runsLog = state.runsLog.filter(r => !(r.ts >= start && r.ts < end));
+    state.questLog = state.questLog.filter(q => !(q.ts >= start && q.ts < end));
+    state.cashOnlyLog = state.cashOnlyLog.filter(c => !(c.ts >= start && c.ts < end));
+    state.note = "";
+    el("dailyNote").value = "";
+
+    save(state);
+    renderTop();
+    if (el("runList").classList.contains("open")) renderRunList();
+    showToast("今日の分だけリセットした。");
+  }
+
+  // ===== Note =====
+  el("dailyNote").value = state.note || "";
+  el("dailyNote").addEventListener("input", () => {
+    state.note = el("dailyNote").value;
+    save(state);
+  });
+
+  // ===== Expose actions =====
+  Object.assign(window, {
+    setOnline,
+    toggleRunList,
+    toggleRunItem,
+    addRun,
+    saveRunEdit,
+    deleteRun,
+    addQuest,
+    addCashOnly,
+    setGoals,
+    clearGoals,
+    resetAll
+  });
+
+  renderTop();
+})();
+  </script>
+</body>
+</html>

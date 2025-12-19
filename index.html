@@ -380,7 +380,46 @@
       white-space:pre-wrap;
     }
     #debugBox.show { display:block; }
-  </style>
+  
+    /* ===== v11 additions ===== */
+    .triple-row{ display:flex; gap:10px; margin-top:10px; }
+    .triple-row .tri{ flex:1; padding:10px 10px; border-radius:12px; background: rgba(2,6,23,0.28); border:1px solid rgba(148,163,184,0.20); min-width:0; }
+    .triple-row .k{ font-size:12px; color: rgba(226,232,240,0.85); }
+    .triple-row .v{ font-size:18px; font-weight:900; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .clickable{ cursor:pointer; }
+    .pill{ display:inline-block; margin-left:6px; padding:2px 7px; border-radius:999px; font-size:11px; font-weight:900; background: rgba(34,197,94,0.18); border:1px solid rgba(34,197,94,0.35); color: rgba(187,247,208,0.95); vertical-align:middle; }
+
+    .double-row{ display:flex; gap:10px; margin-top:10px; }
+    .double-row .dbl{ flex:1; padding:10px 10px; border-radius:12px; background: rgba(2,6,23,0.22); border:1px solid rgba(148,163,184,0.18); min-width:0; }
+    .double-row .k{ font-size:12px; color: rgba(226,232,240,0.85); }
+    .double-row .v{ font-size:16px; font-weight:900; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .ach-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; padding:10px 10px; border-radius:12px; background: rgba(2,6,23,0.18); border:1px solid rgba(148,163,184,0.16); }
+    .ach-row .k{ font-size:12px; color: rgba(226,232,240,0.85); }
+    .ach-right{ flex:1; display:flex; align-items:center; gap:10px; justify-content:flex-end; }
+    .ach-pct{ font-weight:900; min-width:52px; text-align:right; }
+    .ach-bar{ flex:1; height:10px; border-radius:999px; background: rgba(148,163,184,0.18); overflow:hidden; max-width:240px; border:1px solid rgba(148,163,184,0.18); }
+    .ach-fill{ height:100%; border-radius:999px; background: linear-gradient(90deg, rgba(34,197,94,0.9), rgba(249,115,22,0.9)); }
+
+    .big-input{ font-size:20px !important; font-weight:900; padding:12px 12px !important; }
+
+    /* トースト強化 */
+    .toast{ width: calc(100% - 24px); left: 12px; bottom: 12px; border: 1px solid rgba(148,163,184,0.30); background: rgba(2,6,23,0.92); padding: 14px 14px; min-height: 30vh; max-height: 30vh; overflow: auto; font-size: 14px; line-height: 1.35; }
+
+    /* カレンダー */
+    .cal-list{ margin-top:10px; display:flex; flex-direction:column; gap:10px; }
+    .cal-day{ border-radius:12px; padding:10px 10px; background: rgba(2,6,23,0.20); border:1px solid rgba(148,163,184,0.18); }
+    .cal-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer; }
+    .cal-date{ font-weight:900; }
+    .cal-metrics{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; text-align:right; }
+    .cal-metrics span{ font-size:12px; color: rgba(226,232,240,0.88); }
+    .cal-details{ margin-top:10px; display:none; }
+    .cal-day.open .cal-details{ display:block; }
+    .cal-btn{ margin-top:8px; width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(148,163,184,0.22); background: rgba(15,23,42,0.6); font-weight:900; }
+    .cal-runs{ margin-top:8px; display:none; }
+    .cal-day.showruns .cal-runs{ display:block; }
+
+</style>
 </head>
 
 <body>
@@ -420,8 +459,8 @@
       </div>
     </div>
     <div class="btn-row">
+      <button class="btn-muted" onclick="clearGoals()">目標リセット</button>
       <button class="btn-goal" onclick="setGoals()">目標設定</button>
-      <button class="btn-muted" onclick="clearGoals()">目標クリア</button>
     </div>
   </div>
 
@@ -429,7 +468,7 @@
   <div class="card" id="topSummaryCard">
     <div class="top-stack">
       <div id="totalRow" class="top-row">
-        <div class="label" id="totalLabel">総売上 (クエスト込み・現金除外)</div>
+        <div class="label" id="totalLabel">総売上 (クエスト込み)</div>
         <div class="value tier-0" id="totalAmount">¥0</div>
       </div>
 
@@ -438,16 +477,47 @@
         <div class="v" id="prevSummary">¥0 / 0回</div>
       </div>
 
-      <div class="mid-row" id="runsRow">
-        <div class="k">配達回数</div>
-        <div class="v" id="runsSummary">0回</div>
+      <div class="ach-row" id="achRow" style="display:none;">
+        <div class="k">達成率</div>
+        <div class="ach-right">
+          <div class="ach-pct" id="achPct">0%</div>
+          <div class="ach-bar"><div class="ach-fill" id="achFill" style="width:0%;"></div></div>
+        </div>
       </div>
 
-      <div class="mid-row" id="onlineRow">
-        <div class="k">オンライン時給換算</div>
-        <div class="v" id="onlineHourly">¥0/h</div>
+      <div class="triple-row" id="tripleRow">
+        <div class="tri">
+          <div class="k">配達回数</div>
+          <div class="v" id="runsSummary">0回</div>
+        </div>
+        <div class="tri clickable" id="onlineTimeBox" onclick="toggleOnlineTracking()">
+          <div class="k">オンライン時間 <span class="pill" id="onlinePill" style="display:none;">ONLINE</span></div>
+          <div class="v" id="onlineTime">00:00</div>
+        </div>
+        <div class="tri">
+          <div class="k">実働時間</div>
+          <div class="v" id="activeTime">00:00</div>
+        </div>
+      </div>
+
+      <div class="double-row" id="hourlyRow">
+        <div class="dbl">
+          <div class="k">オンライン時給換算</div>
+          <div class="v" id="onlineHourly">¥0/h</div>
+        </div>
+        <div class="dbl">
+          <div class="k">実働時給換算</div>
+          <div class="v" id="activeHourly">¥0/h</div>
+        </div>
       </div>
     </div>
+  </div>
+
+  <!-- 売上カレンダー（直近31日・軽量） -->
+  <div class="card" id="calendarCard">
+    <div class="center-title" style="font-size:16px;">売上カレンダー（直近31日）</div>
+    <div class="label" style="margin-top:2px;">日別：総売上 / 件数 / オンライン時給 / 実働時給</div>
+    <div id="calendarList" class="cal-list"></div>
   </div>
 
   <!-- 配達案件（入力1本化） -->
@@ -456,12 +526,12 @@
 
     <div class="row" style="margin-top:6px;">
       <div>
-        <div class="label">金額 (円)</div>
-        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320" />
+        <div class="label">時間 (分)</div>
+        <input class="big-input" type="text" inputmode="numeric" pattern="[0-9]*" id="inputTime" placeholder="例: 28" />
       </div>
       <div>
-        <div class="label">時間 (分)</div>
-        <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTime" placeholder="例: 28" />
+        <div class="label">金額 (円)</div>
+        <input class="big-input" type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320" />
       </div>
     </div>
 
@@ -500,7 +570,7 @@
     </div>
 
     <div class="btn-row" style="margin-top:6px;">
-      <button class="btn-muted" onclick="toggleRunList()">配達済み</button>
+      <button class="btn-muted" onclick="toggleRunList()">配達済み案件</button>
       <button onclick="addRun()">追加</button>
     </div>
 
@@ -509,39 +579,31 @@
 
   <!-- クエスト & 現金回収 & メモ -->
   <div class="card">
-    <div class="center-title" style="font-size:16px;">クエスト & 今日のメモ & 現金回収</div>
+    <div class="center-title" style="font-size:16px;">クエスト & 今日のメモ & 現金チップ</div>
     <div class="row" style="margin-top:6px;">
       <div>
         <div class="label">クエスト金額 (円)</div>
         <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputQuest" placeholder="例: 1200" />
       </div>
       <div>
-        <div class="label">現金回収 (円)</div>
+        <div class="label">現金チップ (円)</div>
         <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashOnly" placeholder="例: 500" />
       </div>
     </div>
     <div class="btn-row">
       <button class="btn-quest" onclick="addQuest()">クエストを追加</button>
-      <button class="btn-cash" onclick="addCashOnly()">現金回収を追加</button>
+      <button class="btn-cash" onclick="addCashOnly()">現金チップ</button>
     </div>
     <div class="label" style="margin-top:6px;">今日のメモ（雨 / 休日 / ブースト など）</div>
     <textarea id="dailyNote" placeholder="例: 雨クエ中 / 夕方からブースト強め など"></textarea>
   </div>
 
-  <!-- リセット -->
-  <div class="card" style="text-align:center;">
-    <div class="label" style="margin-bottom:4px;">今日の記録を全部リセット</div>
-    <button class="btn-danger" onclick="resetAll()" style="max-width:260px; margin:0 auto;">
-      全リセット（件数・金額・メモ）
-    </button>
-  </div>
-
-  <!-- 更新 -->
+  <!-- リセット / 更新 -->
   <div class="card" style="text-align:center; margin-bottom:24px;">
-    <div class="label" style="margin-bottom:4px;">コード更新後に押す用</div>
-    <button onclick="location.reload()" style="max-width:260px; margin:0 auto;">
-      ページを更新（最新コードを読み込む）
-    </button>
+    <div class="btn-row" style="justify-content:center;">
+      <button class="btn-danger" onclick="resetAll()" style="max-width:160px;">リセット</button>
+      <button onclick="location.reload()" style="max-width:160px;">更新</button>
+    </div>
   </div>
 
   <pre id="debugBox"></pre>
@@ -554,7 +616,8 @@
 (() => {
   // ===== Debug box: show only on error (enable manual by localStorage DDT_DEBUG=true) =====
   const debugBox = document.getElementById("debugBox");
-  const DEBUG_ALWAYS = (localStorage.getItem("DDT_DEBUG") === "true");
+  const safeLSGet = (k) => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+  const DEBUG_ALWAYS = (safeLSGet("DDT_DEBUG") === "true");
   const showDebug = () => debugBox.classList.add("show");
   const log = (msg) => { debugBox.textContent += msg + "\n"; };
 
@@ -624,13 +687,15 @@
   };
 
   // ===== Store =====
-  const STATE_KEY = "deliveryDrillState_v10_single";
+  const STATE_KEY = "deliveryDrillState_v11";
   const baseState = {
     runsLog: [],
     questLog: [],
     cashOnlyLog: [],
     note: "",
-    goals: { runs: null, amount: null }
+    goals: { runs: null, amount: null },
+    onlineByDay: {},
+    onlineStartAt: null
   };
 
   const load = () => {
@@ -643,6 +708,8 @@
       s.questLog = Array.isArray(s.questLog) ? s.questLog : [];
       s.cashOnlyLog = Array.isArray(s.cashOnlyLog) ? s.cashOnlyLog : [];
       s.note = (s.note ?? "").toString();
+      s.onlineByDay = (s.onlineByDay && typeof s.onlineByDay === "object") ? s.onlineByDay : {};
+      s.onlineStartAt = (typeof s.onlineStartAt === "number") ? s.onlineStartAt : null;
 
       const g = s.goals || {};
       s.goals = {
@@ -685,6 +752,61 @@
 
   let state = load();
 
+  // ===== Online time tracking (ONLINE_TIME_DIFF_MODEL) =====
+  function msToHHMM(ms){
+    const m = Math.max(0, Math.floor(ms/60000));
+    const hh = String(Math.floor(m/60)).padStart(2,"0");
+    const mm = String(m%60).padStart(2,"0");
+    return `${hh}:${mm}`;
+  }
+  function getOnlineMs(dayKey){
+    return num(state.onlineByDay?.[dayKey] || 0);
+  }
+  function addOnlineMs(dayKey, ms){
+    if (!state.onlineByDay || typeof state.onlineByDay !== "object") state.onlineByDay = {};
+    state.onlineByDay[dayKey] = num(state.onlineByDay[dayKey] || 0) + Math.max(0, ms);
+  }
+  function allocateElapsedAcrossDays(fromTs, toTs){
+    if (!(typeof fromTs==="number") || !(typeof toTs==="number") || toTs <= fromTs) return;
+    let cur = fromTs;
+    while (cur < toTs){
+      const curKey = businessDayKey(cur);
+      const win = businessWindow(curKey);
+      const segEnd = Math.min(toTs, win.end);
+      addOnlineMs(curKey, segEnd - cur);
+      cur = segEnd;
+    }
+  }
+  function reconcileOnlineToNow(){
+    if (state.onlineStartAt !== null){
+      const now = Date.now();
+      allocateElapsedAcrossDays(state.onlineStartAt, now);
+      state.onlineStartAt = now;
+      save(state);
+    }
+  }
+  function isOnlineRunning(){ return state.onlineStartAt !== null; }
+  function toggleOnlineTracking(){
+    if (isOnlineRunning()){
+      const now = Date.now();
+      allocateElapsedAcrossDays(state.onlineStartAt, now);
+      state.onlineStartAt = null;
+      save(state);
+      showToast("ONLINE計測：停止したよ");
+    } else {
+      state.onlineStartAt = Date.now();
+      save(state);
+      showToast("ONLINE計測：開始したよ");
+    }
+    renderTop();
+  }
+  reconcileOnlineToNow();
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      if (isOnlineRunning()) reconcileOnlineToNow();
+    }
+  });
+
   // ===== Online toggle for next add =====
   let addOnline = true;
   function setOnline(v) {
@@ -723,11 +845,15 @@
     const cashManual = cashOnly.reduce((acc,c) => acc + (c.amount || 0), 0);
     const cashTotal = cashFromRuns + cashManual;
 
-    const onlineRuns = runs.filter(r => r.online !== false);
-    const onlineMinutes = onlineRuns.reduce((acc,r) => acc + (r.minutes || 0), 0);
-    const onlineAmountFromRuns = onlineRuns.reduce((acc,r) => acc + (r.amount || 0), 0);
-    const onlineQuest = questAmount;
-    const onlineAmount = onlineAmountFromRuns + onlineQuest;
+    const onlineMs = getOnlineMs(dayKey) + (isOnlineRunning() ? (()=>{
+      const now = Date.now();
+      const { start, end } = businessWindow(dayKey);
+      const segStart = Math.max(start, state.onlineStartAt ?? now);
+      const segEnd = Math.min(end, now);
+      return Math.max(0, segEnd - segStart);
+    })() : 0);
+    const onlineMinutes = Math.floor(onlineMs / 60000);
+    const onlineAmount = totalAmount;
 
     return {
       runs, quest, cashOnly,
@@ -795,13 +921,183 @@
     const tr = state.goals.runs;
     el("runsSummary").textContent = (tr && tr > 0) ? `${today.runsCount} / ${tr}回` : `${today.runsCount}回`;
 
-    const r = calcRates(today.onlineAmount, today.onlineMinutes);
-    el("onlineHourly").textContent = `¥${yen(r.perHour)}/h`;
+    el("onlineTime").textContent = msToHHMM(today.onlineMinutes * 60000);
+    el("activeTime").textContent = msToHHMM(today.minutesTotal * 60000);
+
+    const running = isOnlineRunning();
+    el("onlinePill").style.display = running ? "inline-block" : "none";
+
+    const rOnline = calcRates(today.totalAmount, today.onlineMinutes);
+    el("onlineHourly").textContent = `¥${yen(rOnline.perHour)}/h`;
+
+    const rActive = calcRates(today.totalAmount, today.minutesTotal);
+    el("activeHourly").textContent = `¥${yen(rActive.perHour)}/h`;
+
+    const needRuns = (state.goals.runs !== null && state.goals.runs > 0);
+    const needAmt  = (state.goals.amount !== null && state.goals.amount > 0);
+    const achRow = el("achRow");
+    if (!needRuns && !needAmt) {
+      achRow.style.display = "none";
+    } else {
+      const rr = needRuns ? Math.min(1, today.runsCount / state.goals.runs) : 1;
+      const ar = needAmt ? Math.min(1, today.totalAmount / state.goals.amount) : 1;
+      const pct = Math.round(((needRuns && needAmt) ? ((rr + ar) / 2) : (needRuns ? rr : ar)) * 100);
+      achRow.style.display = "flex";
+      el("achPct").textContent = `${pct}%`;
+      el("achFill").style.width = `${pct}%`;
+    }
 
     const met = goalsAchieved(today);
     el("topSummaryCard").classList.toggle("goal-met", met);
     totalRow.classList.toggle("goal-met", met);
+
+    renderCalendar();
   }
+
+  // ===== Calendar (last 31 days, lightweight accordion) =====
+  function renderCalendar() {
+    const box = el("calendarList");
+    if (!box) return;
+
+    const now = Date.now();
+    const days = [];
+    for (let i=0;i<31;i++){
+      const ts = now - i*86400000;
+      const k = businessDayKey(ts);
+      if (!days.includes(k)) days.push(k);
+    }
+
+    const rows = days.map(dayKey => {
+      const t = totalsForDay(dayKey);
+      const d = new Date(businessWindow(dayKey).start);
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      const w = ["日","月","火","水","木","金","土"][d.getDay()];
+      const label = `${mm}/${dd}(${w})`;
+
+      const onlineRate = calcRates(t.totalAmount, t.onlineMinutes).perHour;
+      const activeRate = calcRates(t.totalAmount, t.minutesTotal).perHour;
+
+      return `
+        <div class="cal-day" data-day="${dayKey}">
+          <div class="cal-head" onclick="toggleCalDay('${dayKey}')">
+            <div class="cal-date">${label}</div>
+            <div class="cal-metrics">
+              <span>売上: ¥${yen(t.totalAmount)}</span>
+              <span>件数: ${t.runsCount}回</span>
+              <span>オンライン: ¥${yen(onlineRate)}/h</span>
+              <span>実働: ¥${yen(activeRate)}/h</span>
+            </div>
+          </div>
+
+          <div class="cal-details">
+            <div class="double-row" style="margin-top:8px;">
+              <div class="dbl">
+                <div class="k">オンライン時間</div>
+                <div class="v">${msToHHMM(t.onlineMinutes*60000)}</div>
+              </div>
+              <div class="dbl">
+                <div class="k">実働時間</div>
+                <div class="v">${msToHHMM(t.minutesTotal*60000)}</div>
+              </div>
+            </div>
+
+            <button class="cal-btn" onclick="toggleCalRuns(event,'${dayKey}')">
+              配達ログを表示（${t.runs.length}件）
+            </button>
+
+            <div class="cal-runs" id="calRuns_${dayKey}"></div>
+          </div>
+        </div>`;
+    }).join("");
+
+    box.innerHTML = rows;
+  }
+
+  function toggleCalDay(dayKey){
+    const node = document.querySelector(`.cal-day[data-day="${dayKey}"]`);
+    if (!node) return;
+    node.classList.toggle("open");
+  }
+
+  function toggleCalRuns(ev, dayKey){
+    ev.stopPropagation();
+    const node = document.querySelector(`.cal-day[data-day="${dayKey}"]`);
+    if (!node) return;
+    const show = !node.classList.contains("showruns");
+    node.classList.toggle("showruns", show);
+    if (show) renderCalRuns(dayKey);
+  }
+
+  function renderCalRuns(dayKey){
+    const box = el(`calRuns_${dayKey}`);
+    if (!box) return;
+    const t = totalsForDay(dayKey);
+    const list = [...t.runs].sort((a,b)=> (b.ts - a.ts));
+
+    if (list.length === 0){
+      box.innerHTML = `<div class="label">配達ログはありません。</div>`;
+      return;
+    }
+
+    const CHUNK = 40;
+    const slice = list.slice(0, CHUNK);
+    const htmlChunk = slice.map(r => {
+      const stamp = formatStamp(r.ts);
+      const rates = calcRates(num(r.amount), num(r.minutes));
+      return `
+        <div class="run-item" style="margin-top:8px;">
+          <div class="run-head" style="cursor:default;">
+            <div class="left">
+              <div class="stamp">${stamp}</div>
+              <div class="mini">金額: ¥${yen(r.amount)}｜時間: ${num(r.minutes)}分｜時給換算: ¥${yen(rates.perHour)}/h</div>
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+
+    const more = (CHUNK < list.length)
+      ? `<button class="cal-btn" onclick="loadMoreCalRuns(event,'${dayKey}',${CHUNK})">さらに表示（残り ${list.length-CHUNK}件）</button>`
+      : "";
+
+    box.innerHTML = htmlChunk + more;
+  }
+
+  function loadMoreCalRuns(ev, dayKey, from){
+    ev.stopPropagation();
+    const box = el(`calRuns_${dayKey}`);
+    if (!box) return;
+    const t = totalsForDay(dayKey);
+    const list = [...t.runs].sort((a,b)=> (b.ts - a.ts));
+    const CHUNK = 40;
+
+    // remove existing more button
+    const btn = box.querySelector("button.cal-btn");
+    if (btn) btn.remove();
+
+    const slice = list.slice(from, from+CHUNK);
+    const htmlChunk = slice.map(r => {
+      const stamp = formatStamp(r.ts);
+      const rates = calcRates(num(r.amount), num(r.minutes));
+      return `
+        <div class="run-item" style="margin-top:8px;">
+          <div class="run-head" style="cursor:default;">
+            <div class="left">
+              <div class="stamp">${stamp}</div>
+              <div class="mini">金額: ¥${yen(r.amount)}｜時間: ${num(r.minutes)}分｜時給換算: ¥${yen(rates.perHour)}/h</div>
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+
+    box.insertAdjacentHTML("beforeend", htmlChunk);
+
+    const next = from + CHUNK;
+    if (next < list.length){
+      box.insertAdjacentHTML("beforeend", `<button class="cal-btn" onclick="loadMoreCalRuns(event,'${dayKey}',${next})">さらに表示（残り ${list.length-next}件）</button>`);
+    }
+  }
+
 
   // ===== Run list (accordion) =====
   function toggleRunList() {
@@ -832,7 +1128,7 @@
       const pm = rates.perMin ? `¥${yen(rates.perMin)}/分` : `-`;
       const ph = rates.perHour ? `¥${yen(rates.perHour)}/h` : `-`;
       const onlineTag = (r.online !== false) ? "オンライン" : "オフライン";
-      const sub = `${onlineTag}｜件数:${num(r.count)}｜現金:${yen(r.cash)}｜時給:${ph}｜分単価:${pm}`;
+      const sub = `${onlineTag}｜件数:${num(r.count)}｜現金:${yen(r.cash)}｜時給換算:${ph}｜分単価:${pm}`;
 
       return `
         <div class="run-item" data-id="${r.id}">
@@ -1076,7 +1372,13 @@
     addCashOnly,
     setGoals,
     clearGoals,
-    resetAll
+    resetAll,
+    toggleOnlineTracking,
+    renderCalendar,
+    toggleCalDay,
+    toggleCalRuns,
+    renderCalRuns,
+    loadMoreCalRuns
   });
 
   renderTop();

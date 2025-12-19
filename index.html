@@ -255,13 +255,19 @@ function businessWindow(dayKey){
 const STORE_KEY="ddt_store_v11_compact";
 const defaultState={
   runsLog:[],quest:[],cashTip:[],memo:"",
+  calendarOpen:false,
   goal:{runs:0,amount:0},
   online:{isOn:false,startAt:0,accumulatedMs:0}
 };
+function structuredClonePoly(obj){ return JSON.parse(JSON.stringify(obj)); }
 function loadState(){
-  try{const raw=localStorage.getItem(STORE_KEY);if(!raw)return structuredClone(defaultState);
-    const s=JSON.parse(raw);return Object.assign(structuredClone(defaultState),s);
-  }catch(e){return structuredClone(defaultState);}
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(!raw) return structuredClonePoly(defaultState);
+    const s=JSON.parse(raw);
+    const base=structuredClonePoly(defaultState);
+    return Object.assign(base,s);
+  }catch(e){return structuredClonePoly(defaultState);}
 }
 function saveState(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
 let state=loadState();
@@ -385,16 +391,18 @@ function setOnline(on){
 el("btnOnline").addEventListener("click",()=>setOnline(true));
 el("btnOffline").addEventListener("click",()=>setOnline(false));
 
-let calendarOpen=false;
+let calendarOpen=!!state.calendarOpen;
 function setCalendarOpen(v){
   calendarOpen=!!v;
+  state.calendarOpen=calendarOpen;
+  saveState();
   el("calendarWrap").style.display=calendarOpen?"block":"none";
   el("calendarToggle").textContent=calendarOpen?"閉じる":"表示する";
   if(calendarOpen)renderCalendar();
 }
 el("calendarTitle").addEventListener("click",()=>setCalendarOpen(!calendarOpen));
 el("calendarToggle").addEventListener("click",()=>setCalendarOpen(!calendarOpen));
-setCalendarOpen(false);
+setCalendarOpen(calendarOpen);
 
 function renderCalendar(){
   const box=el("calendarList");

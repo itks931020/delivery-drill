@@ -512,10 +512,6 @@
       </div>
     </div>
   </div>
-
-  <!-- 売上カレンダー（直近31日・軽量） -->
-  <div class="card" id="calendarCard">
-    <div class="center-title" style="font-size:16px;">売上カレンダー（直近31日）</div>
     <div class="label" style="margin-top:2px;">日別：総売上 / 件数 / オンライン時給 / 実働時給</div>
     <div id="calendarList" class="cal-list"></div>
   </div>
@@ -562,8 +558,8 @@
         <div class="toggle">
           <div class="tlabel">稼働</div>
           <div class="seg" role="group" aria-label="online toggle">
-            <button type="button" id="btnOnline" class="active" onclick="setOnline(true)">オンライン</button>
-            <button type="button" id="btnOffline" onclick="setOnline(false)">オフライン</button>
+            <button type="button" id="btnOnline" class="active">オンライン</button>
+            <button type="button" id="btnOffline">オフライン</button>
           </div>
         </div>
       </div>
@@ -577,7 +573,14 @@
     <div id="runList" class="runlist"></div>
   </div>
 
-  <!-- クエスト & 現金回収 & メモ -->
+  
+
+  <!-- 売上カレンダー（直近31日・軽量） -->
+  <div class="card" id="calendarCard">
+    <div class="center-title clickable" id="calendarTitle" style="font-size:16px;">売上カレンダー</div>
+    <button type="button" id="calendarToggle" class="btn small" style="margin-top:10px;">表示する</button>
+
+<!-- クエスト & 現金回収 & メモ -->
   <div class="card">
     <div class="center-title" style="font-size:16px;">クエスト & 今日のメモ & 現金チップ</div>
     <div class="row" style="margin-top:6px;">
@@ -799,6 +802,7 @@
       showToast("ONLINE計測：開始したよ");
     }
     renderTop();
+    syncOnlineButtons();
   }
   reconcileOnlineToNow();
   document.addEventListener("visibilitychange", () => {
@@ -807,15 +811,63 @@
     }
   });
 
-  // ===== Online toggle for next add =====
-  let addOnline = true;
-  function setOnline(v) {
-    addOnline = !!v;
-    el("btnOnline").classList.toggle("active", addOnline);
-    el("btnOffline").classList.toggle("active", !addOnline);
+  // ===== Online tracking buttons (ONLINE_TIME_DIFF_MODEL) =====
+  function syncOnlineButtons(){
+    const running = isOnlineRunning();
+    el("btnOnline").classList.toggle("active", running);
+    el("btnOffline").classList.toggle("active", !running);
   }
 
-  // ===== Toast =====
+  function startOnlineTracking(){
+    if (!isOnlineRunning()){
+      state.onlineStartAt = Date.now();
+      save(state);
+      showToast("ONLINE計測：開始したよ");
+      renderTop();
+    }
+    syncOnlineButtons();
+  }
+
+  function stopOnlineTracking(){
+    if (isOnlineRunning()){
+      const now = Date.now();
+      allocateElapsedAcrossDays(state.onlineStartAt, now);
+      state.onlineStartAt = null;
+      save(state);
+      showToast("ONLINE計測：停止したよ");
+      renderTop();
+    }
+    syncOnlineButtons();
+  }
+
+    // 互換用（旧 onclick などが残っても動くように）
+  function setOnline(v){ (v ? startOnlineTracking : stopOnlineTracking)(); }
+
+el("btnOnline").addEventListener("click", startOnlineTracking);
+  el("btnOffline").addEventListener("click", stopOnlineTracking);
+
+  // 初期同期
+  syncOnlineButtons();
+
+  
+  // ===== Calendar toggle (safe: collapsed by default) =====
+  let calendarOpen = false;
+  function setCalendarOpen(v){
+    calendarOpen = !!v;
+    const wrap = el("calendarWrap");
+    const btn = el("calendarToggle");
+    if (wrap) wrap.style.display = calendarOpen ? "block" : "none";
+    if (btn) btn.textContent = calendarOpen ? "閉じる" : "表示する";
+    if (calendarOpen) renderCalendar();
+  }
+  const calTitle = document.getElementById("calendarTitle");
+  const calBtn = document.getElementById("calendarToggle");
+  if (calTitle) calTitle.addEventListener("click", () => setCalendarOpen(!calendarOpen));
+  if (calBtn) calBtn.addEventListener("click", () => setCalendarOpen(!calendarOpen));
+  // 初期は閉じる
+  setCalendarOpen(false);
+
+// ===== Toast =====
   let toastTimer = null;
   const showToast = (msg) => {
     const t = el("toast");
@@ -1209,7 +1261,7 @@
       cash,
       count,
       distance,
-      online: addOnline
+      online: true
     };
 
     state.runsLog.push(entry);

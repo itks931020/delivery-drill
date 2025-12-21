@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>配達ドリルトラッカー</title>
+<title>配達ドリルトラッカー v12</title>
 <style>
 :root{
   --bg:#050816;--card:#141a2b;--text:#f5f5f5;--muted:#9ca3af;
   --b1:rgba(148,163,184,.16);--b2:rgba(148,163,184,.18);
   --glow:rgba(59,130,246,.35);
+  --ok:#22c55e; --warn:#facc15; --danger:#ef4444;
 }
 *{box-sizing:border-box}
 body{
@@ -36,7 +37,12 @@ h1{font-size:20px;margin:0 0 4px}
 }
 .card.sparkle::after{opacity:.45;transform:rotate(-8deg);animation-duration:4.6s}
 @keyframes spark{from{transform:translate3d(-8%,-6%,0) rotate(10deg)}to{transform:translate3d(8%,6%,0) rotate(10deg)}}
-.goal-met{border-color:rgba(250,204,21,.75)!important;box-shadow:0 0 0 1px rgba(250,204,21,.12),0 18px 35px rgba(0,0,0,.8)!important}
+
+.goal-met{
+  border-color:rgba(250,204,21,.85)!important;
+  box-shadow:0 0 0 1px rgba(250,204,21,.16),0 18px 35px rgba(0,0,0,.8)!important;
+  background:linear-gradient(135deg,rgba(50,35,0,.45),rgba(20,26,43,.95),rgba(9,12,24,.98))!important;
+}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .dash{
   background:rgba(2,6,23,.18);
@@ -45,13 +51,15 @@ h1{font-size:20px;margin:0 0 4px}
 }
 .label{font-size:11px;color:var(--muted)}
 .dash-value{font-size:22px;font-weight:800;margin-top:2px}
-.input-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
-input[type="text"],textarea{
+
+input[type="text"],textarea,select{
   width:100%;border-radius:12px;border:1px solid var(--b2);
   background:rgba(2,6,23,.25);color:var(--text);
   padding:10px;font-size:16px;outline:none;
 }
 textarea{min-height:60px;resize:vertical}
+select{appearance:auto}
+
 button{
   border:none;border-radius:999px;padding:10px;font-weight:900;cursor:pointer;
   color:#fff;background:linear-gradient(90deg,#3b82f6,#06b6d4);
@@ -66,8 +74,11 @@ button:active{transform:translateY(1px)}
 .btn-goal{background:linear-gradient(90deg,#a855f7,#3b82f6);box-shadow:0 8px 18px rgba(168,85,247,.38)}
 .btn-quest{background:linear-gradient(90deg,#3b82f6,#06b6d4);box-shadow:0 8px 18px rgba(59,130,246,.55)}
 .btn-cash{background:linear-gradient(90deg,#f97316,#facc15);box-shadow:0 8px 18px rgba(249,115,22,.55)}
+.btn-danger{background:linear-gradient(90deg,#ef4444,#f97316);box-shadow:0 8px 18px rgba(239,68,68,.45)}
+
 .btn-row{display:flex;gap:8px;margin-top:6px;justify-content:center}
 .btn-row button{flex:1;width:auto;text-align:center}
+
 .center-title{text-align:center;font-weight:950;letter-spacing:.02em;margin-bottom:6px}
 .top-row{
   padding:8px 10px;border-radius:12px;
@@ -87,6 +98,7 @@ button:active{transform:translateY(1px)}
 .v{font-size:18px;font-weight:950;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .double{display:flex;gap:6px;margin-top:6px}
 .double .v{font-size:16px}
+
 .ach{
   display:flex;align-items:center;gap:10px;justify-content:space-between;
   margin-top:6px;background:rgba(2,6,23,.18);
@@ -95,12 +107,15 @@ button:active{transform:translateY(1px)}
 .achL,.achR{font-size:12px;font-weight:950;white-space:nowrap}
 .achBar{flex:1;height:10px;border-radius:999px;background:rgba(148,163,184,.14);overflow:hidden}
 .achFill{height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#facc15);border-radius:999px}
+
 .runlist{margin-top:8px;display:none}
 .runitem{
   background:rgba(2,6,23,.18);border:1px solid var(--b1);
   border-radius:12px;padding:10px;margin-bottom:8px;font-size:15px;
 }
 .runitem .small{font-size:12px;color:rgba(156,163,175,.95);margin-top:4px}
+
+/* normal toast */
 .toast{
   position:fixed;left:12px;bottom:12px;width:calc(100% - 24px);
   background:rgba(15,23,42,.92);
@@ -112,6 +127,27 @@ button:active{transform:translateY(1px)}
   pointer-events:none;max-height:30vh;overflow:auto;
 }
 .toast.show{opacity:1;transform:translateY(0)}
+
+/* modal toast (must ack) */
+.modalOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  display:none;align-items:flex-end;justify-content:center;
+  padding:12px;z-index:9999;
+}
+.modalOverlay.show{display:flex;}
+.modalToast{
+  width:min(520px,100%);
+  background:rgba(15,23,42,.96);
+  border:1px solid rgba(250,204,21,.55);
+  border-radius:16px;padding:14px;
+  box-shadow:0 18px 50px rgba(0,0,0,.85);
+}
+.modalToast .ttl{font-weight:950;font-size:14px;margin-bottom:6px}
+.modalToast .msg{font-size:13px;color:rgba(226,232,240,.92);line-height:1.45;margin-bottom:10px}
+.modalToast .actions{display:flex;gap:8px}
+.modalToast .actions button{flex:1}
+
+/* calendar */
 .calBtn{
   margin:8px auto 0;width:min(320px,100%);
   padding:10px 12px;border-radius:999px;
@@ -131,10 +167,24 @@ button:active{transform:translateY(1px)}
 .calDate{font-weight:950}
 .calMetrics{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;text-align:right}
 .calMetrics span{font-size:12px;color:rgba(226,232,240,.88)}
+.calMemo{margin-top:6px;font-size:12px;color:rgba(226,232,240,.85);display:none}
+.calDay.open .calMemo{display:block}
 .calDetails{margin-top:6px;display:none}
 .calDay.open .calDetails{display:block}
 .calRuns{margin-top:8px;display:none}
 .calDay.showruns .calRuns{display:block}
+
+/* online indicator */
+.onlineBadge{font-size:12px;font-weight:950;color:var(--ok);margin-left:6px}
+.onlineTapHint{font-size:11px;color:rgba(156,163,175,.95);margin-top:4px;text-align:center}
+
+/* delivery input layout */
+.deliveryGrid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin-top:6px;
+}
 </style>
 </head>
 <body>
@@ -145,19 +195,19 @@ button:active{transform:translateY(1px)}
 <div class="card sparkle" id="topSummaryCard">
   <div class="row">
     <div class="dash"><div class="label">クエスト合計</div><div class="dash-value">¥<span id="questSum">0</span></div></div>
-    <div class="dash"><div class="label">現金回収合計</div><div class="dash-value">¥<span id="cashSum">0</span></div></div>
+    <div class="dash"><div class="label">現金代引き合計</div><div class="dash-value">¥<span id="cashSum">0</span></div></div>
     <div class="dash"><div class="label">目標回数</div><div class="dash-value"><span id="targetRunsLabel">なし</span></div></div>
     <div class="dash"><div class="label">目標金額</div><div class="dash-value"><span id="targetAmountLabel">なし</span></div></div>
   </div>
 
-  <div class="input-row">
+  <div class="row" style="margin-top:6px;">
     <div><div class="label">目標回数（任意）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetRuns" placeholder="未設定でもOK" /></div>
     <div><div class="label">目標金額（任意・円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetAmount" placeholder="未設定でもOK" /></div>
   </div>
 
   <div class="btn-row">
-    <button class="btn-muted" onclick="resetGoal()">目標リセット</button>
-    <button class="btn-goal" onclick="setGoal()">目標設定</button>
+    <button class="btn-muted" id="btnGoalReset">目標リセット</button>
+    <button class="btn-goal" id="btnGoalSet">目標設定</button>
   </div>
 </div>
 
@@ -175,7 +225,7 @@ button:active{transform:translateY(1px)}
 
   <div class="triple">
     <div><div class="k">配達回数</div><div class="v"><span id="runCount">0</span>回</div></div>
-    <div><div class="k">オンライン時間</div><div class="v"><span id="onlineTime">00:00</span></div></div>
+    <div id="onlineTimeBox"><div class="k">オンライン時間<span id="onlineBadge" class="onlineBadge" style="display:none;">online</span></div><div class="v"><span id="onlineTime">00:00</span></div></div>
     <div><div class="k">実働時間</div><div class="v"><span id="workTime">00:00</span></div></div>
   </div>
 
@@ -183,19 +233,44 @@ button:active{transform:translateY(1px)}
     <div><div class="k">オンライン時給換算</div><div class="v">¥<span id="onlineWage">0</span>/h</div></div>
     <div><div class="k">実働時給換算</div><div class="v">¥<span id="workWage">0</span>/h</div></div>
   </div>
+
+  <div class="onlineTapHint">オンライン時間をタップ：オンライン/オフライン切替・時刻修正</div>
 </div>
 
 <div class="card">
   <div class="center-title" style="font-size:16px;">配達案件</div>
-  <div class="row">
-    <div><div class="label">時間（分）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputMinutes" placeholder="例: 28" /></div>
-    <div><div class="label">金額（円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320" /></div>
-    <div><div class="label">現金回収（円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashCollected" placeholder="例: 300" /></div>
-    <div><div class="label">件数（件）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCount" placeholder="1" value="1" /></div>
+
+  <div class="deliveryGrid">
+    <div>
+      <div class="label">件数（件）</div>
+      <select id="inputCount">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+
+    <div>
+      <div class="label">金額（円）</div>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320" />
+    </div>
+
+    <div>
+      <div class="label">現金代引き（円）</div>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashCollected" placeholder="例: 300" />
+    </div>
+
+    <div>
+      <div class="label">時間（分）</div>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputMinutes" placeholder="例: 28" />
+    </div>
   </div>
+
   <div class="btn-row">
-    <button class="btn-muted" onclick="toggleRunList()">配達済み案件</button>
-    <button onclick="addRun()">追加</button>
+    <button class="btn-muted" id="btnToggleRunList">配達済み案件</button>
+    <button id="btnAddRun">追加</button>
   </div>
   <div id="runList" class="runlist"></div>
 </div>
@@ -204,7 +279,7 @@ button:active{transform:translateY(1px)}
   <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
   <button type="button" id="calendarToggle" class="calBtn">表示する</button>
   <div id="calendarWrap">
-    <div class="sub" style="margin:0 0 6px;">日別：総売上 / 件数 / オンライン時給 / 実働時給</div>
+    <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
     <div id="calendarList" class="calList"></div>
   </div>
 </div>
@@ -220,311 +295,700 @@ button:active{transform:translateY(1px)}
     <textarea id="inputMemo" placeholder="メモ"></textarea>
   </div>
   <div class="btn-row">
-    <button class="btn-quest" onclick="addQuest()">クエスト追加</button>
-    <button class="btn-cash" onclick="addCashTip()">現金チップ</button>
+    <button class="btn-quest" id="btnAddQuest">クエスト追加</button>
+    <button class="btn-cash" id="btnAddCashTip">現金チップ</button>
+  </div>
+  <div class="btn-row">
+    <button class="btn-danger" id="btnResetQuestToday">クエスト今日分リセット</button>
   </div>
 </div>
 
 <div class="card">
   <div class="center-title" style="font-size:16px;">オンライン</div>
   <div class="btn-row">
-    <button type="button" id="btnOnline">オンライン</button>
     <button type="button" id="btnOffline" class="btn-muted">オフライン</button>
+    <button type="button" id="btnOnline">オンライン</button>
   </div>
   <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
 </div>
 
 <div id="toast" class="toast"></div>
 
+<!-- modal -->
+<div id="modalOverlay" class="modalOverlay" aria-hidden="true">
+  <div class="modalToast">
+    <div class="ttl" id="modalTitle">通知</div>
+    <div class="msg" id="modalMsg">メッセージ</div>
+    <div class="actions" id="modalActions"></div>
+  </div>
+</div>
+
 <script>
-const el=(id)=>document.getElementById(id);
-const toInt=(s)=>{if(s==null)return 0;const n=parseInt(String(s).replace(/[^\d-]/g,""),10);return Number.isFinite(n)?n:0;};
-const fmtYen=(n)=>String(Math.max(0,Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+(() => {
+  "use strict";
 
-function businessDayKey(ts=Date.now()){
-  const d=new Date(ts);d.setMinutes(d.getMinutes()-240);
-  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
-  return `${y}-${m}-${day}`;
-}
-function businessWindow(dayKey){
-  const [y,m,d]=dayKey.split("-").map(Number);
-  const start=new Date(y,m-1,d,4,0,0,0).getTime();
-  return {start,end:start+86400000};
-}
+  const STORE_KEY = "ddt_store_v12";
+  const INACTIVE_MS = 90 * 60 * 1000;   // 無操作 90分で自動オフライン
+  const HIDDEN_MS   = 120 * 60 * 1000;  // 非表示 120分で自動オフライン
 
-const STORE_KEY="ddt_store_v11_compact";
-const defaultState={
-  runsLog:[],quest:[],cashTip:[],memo:"",
-  calendarOpen:false,
-  goal:{runs:0,amount:0},
-  online:{isOn:false,startAt:0,accumulatedMs:0}
-};
-function structuredClonePoly(obj){ return JSON.parse(JSON.stringify(obj)); }
-function loadState(){
-  try{
-    const raw=localStorage.getItem(STORE_KEY);
-    if(!raw) return structuredClonePoly(defaultState);
-    const s=JSON.parse(raw);
-    const base=structuredClonePoly(defaultState);
-    return Object.assign(base,s);
-  }catch(e){return structuredClonePoly(defaultState);}
-}
-function saveState(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
-let state=loadState();
+  const el = (id) => document.getElementById(id);
+  const safeEl = (id) => {
+    const n = document.getElementById(id);
+    return n || null;
+  };
+  const toInt=(s)=>{if(s==null)return 0;const n=parseInt(String(s).replace(/[^\d-]/g,""),10);return Number.isFinite(n)?n:0;};
+  const fmtYen=(n)=>String(Math.max(0,Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g,",");
 
-let toastTimer=null;
-function showToast(msg){
-  const t=el("toast");t.textContent=msg;t.classList.add("show");
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),5000);
-}
+  function businessDayKey(ts=Date.now()){
+    const d=new Date(ts); d.setMinutes(d.getMinutes()-240);
+    const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  }
+  function businessWindow(dayKey){
+    const [y,m,d]=dayKey.split("-").map(Number);
+    const start=new Date(y,m-1,d,4,0,0,0).getTime();
+    return {start,end:start+86400000};
+  }
+  function todayKey(){return businessDayKey(Date.now());}
 
-function todayKey(){return businessDayKey(Date.now());}
-function totalsForDay(dayKey){
-  const {start,end}=businessWindow(dayKey);
-  const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end);
-  const quest=state.quest.filter(q=>q.ts>=start&&q.ts<end);
-  const amountSum=runs.reduce((a,r)=>a+(r.amount||0),0);
-  const questSum=quest.reduce((a,q)=>a+(q.amount||0),0);
-  const sales=amountSum+questSum; // 総売上＝配達＋クエスト（現金チップは含めない）
-  const count=runs.reduce((a,r)=>a+(r.count||0),0);
-  const workMinutes=runs.reduce((a,r)=>a+(r.minutes||0),0);
-  return {sales,count,workMs:workMinutes*60000};
-}
+  const defaultState={
+    runsLog:[], quest:[], cashTip:[],
+    goal:{runs:0,amount:0},
+    online:{isOn:false,startAt:0,accumulatedMs:0,lastKey:""},
+    memos:{}, // {dayKey: text}
+    calendarOpen:false,
+    lastInteraction:Date.now(),
+    hiddenSince:0
+  };
 
-function currentOnlineMs(){
-  const o=state.online;
-  let ms=o.accumulatedMs||0;
-  if(o.isOn&&o.startAt)ms+=Date.now()-o.startAt;
-  return Math.max(0,ms);
-}
-function fmtHHMM(ms){
-  const totalMin=Math.floor(ms/60000);
-  const hh=String(Math.floor(totalMin/60)).padStart(2,"0");
-  const mm=String(totalMin%60).padStart(2,"0");
-  return `${hh}:${mm}`;
-}
+  function structuredClonePoly(obj){ return JSON.parse(JSON.stringify(obj)); }
+  function loadState(){
+    try{
+      const raw=localStorage.getItem(STORE_KEY);
+      if(!raw) return structuredClonePoly(defaultState);
+      const s=JSON.parse(raw);
+      const base=structuredClonePoly(defaultState);
+      // merge (shallow)
+      const merged = Object.assign(base,s);
+      // deep-ish fix
+      merged.goal = Object.assign(structuredClonePoly(defaultState.goal), s.goal||{});
+      merged.online = Object.assign(structuredClonePoly(defaultState.online), s.online||{});
+      merged.memos = Object.assign({}, s.memos||{});
+      merged.calendarOpen = !!s.calendarOpen;
+      merged.lastInteraction = s.lastInteraction || Date.now();
+      merged.hiddenSince = s.hiddenSince || 0;
+      return merged;
+    }catch(e){return structuredClonePoly(defaultState);}
+  }
+  let state = loadState();
+  function saveState(){
+    state.calendarOpen = calendarOpen;
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  }
 
-let runListOpen=false;
-function toggleRunList(){
-  runListOpen=!runListOpen;
-  el("runList").style.display=runListOpen?"block":"none";
-  if(runListOpen)renderRunList();
-}
-function renderRunList(){
-  const box=el("runList");
-  const {start,end}=businessWindow(todayKey());
-  const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end).slice().reverse();
-  if(!runs.length){box.innerHTML=`<div class="sub" style="margin:6px 0 0;">まだなし</div>`;return;}
-  box.innerHTML=runs.map(r=>{
-    const wage=r.minutes>0?Math.floor(r.amount/(r.minutes/60)):0;
-    return `<div class="runitem">
-      <div><strong>¥${fmtYen(r.amount)}</strong> / ${r.minutes}分 / ${r.count||1}件</div>
-      <div class="small">時給換算：¥${fmtYen(wage)}/h　現金回収：¥${fmtYen(r.cashCollected||0)}</div>
-    </div>`;
-  }).join("");
-}
+  // toasts
+  let toastTimer=null;
+  function showToast(msg){
+    const t=safeEl("toast"); if(!t) return;
+    t.textContent=msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),5000);
+  }
 
-function addRun(){
-  const minutes=toInt(el("inputMinutes").value);
-  const amount=toInt(el("inputAmount").value);
-  const cashCollected=toInt(el("inputCashCollected").value);
-  const count=Math.max(1,toInt(el("inputCount").value)||1);
-  if(!minutes||!amount){showToast("時間（分）と金額（円）を入力してね");return;}
-  const id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
-  state.runsLog.push({id,ts:Date.now(),minutes,amount,cashCollected,count});
-  el("inputMinutes").value="";el("inputAmount").value="";el("inputCashCollected").value="";el("inputCount").value="1";
-  showToast(`追加：${minutes}分 / ¥${fmtYen(amount)} / ${count}件`);
-  updateUI();
-}
+  // modal (must ack)
+  function showModal({title="通知", msg="", buttons=[{text:"OK", type:"primary", onClick:()=>{}}]}){
+    const ov = safeEl("modalOverlay");
+    const ttl = safeEl("modalTitle");
+    const mm = safeEl("modalMsg");
+    const acts = safeEl("modalActions");
+    if(!ov||!ttl||!mm||!acts){ return; }
 
-function addQuest(){
-  const a=toInt(el("inputQuest").value);
-  if(!a){showToast("クエスト金額を入れてね");return;}
-  const id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
-  state.quest.push({id,ts:Date.now(),amount:a});
-  el("inputQuest").value="";
-  showToast(`クエスト追加：¥${fmtYen(a)}`);
-  updateUI();
-}
-function addCashTip(){
-  const a=toInt(el("inputCashTip").value);
-  if(!a){showToast("現金チップ金額を入れてね");return;}
-  const id=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
-  state.cashTip.push({id,ts:Date.now(),amount:a});
-  el("inputCashTip").value="";
-  showToast(`現金チップ：¥${fmtYen(a)}（※総売上に入れない）`);
-  updateUI();
-}
+    ttl.textContent = title;
+    mm.textContent = msg;
+    acts.innerHTML = "";
+    buttons.forEach((b)=>{
+      const btn=document.createElement("button");
+      btn.textContent=b.text||"OK";
+      if(b.type==="muted") btn.className="btn-muted";
+      else if(b.type==="danger") btn.className="btn-danger";
+      // else default gradient button
+      btn.addEventListener("click",()=>{
+        try{ b.onClick && b.onClick(); }catch(e){}
+        ov.classList.remove("show");
+        ov.setAttribute("aria-hidden","true");
+      });
+      acts.appendChild(btn);
+    });
+    ov.classList.add("show");
+    ov.setAttribute("aria-hidden","false");
+  }
 
-el("inputMemo").value=state.memo||"";
-el("inputMemo").addEventListener("input",()=>{state.memo=el("inputMemo").value||"";saveState();});
-
-function setGoal(){
-  state.goal.runs=toInt(el("inputTargetRuns").value);
-  state.goal.amount=toInt(el("inputTargetAmount").value);
-  showToast("目標を設定した");
-  updateUI();
-}
-function resetGoal(){
-  state.goal={runs:0,amount:0};
-  el("inputTargetRuns").value="";el("inputTargetAmount").value="";
-  showToast("目標をリセットした");
-  updateUI();
-}
-
-function setOnline(on){
-  const o=state.online;
-  if(on){
-    if(!o.isOn){o.isOn=true;o.startAt=Date.now();}
-    el("btnOnline").classList.remove("btn-muted");
-    el("btnOffline").classList.add("btn-muted");
-  }else{
-    if(o.isOn){
-      o.accumulatedMs=(o.accumulatedMs||0)+(Date.now()-(o.startAt||Date.now()));
-      o.startAt=0;o.isOn=false;
+  // interaction tracking
+  function touch(){
+    state.lastInteraction = Date.now();
+    if(state.hiddenSince) state.hiddenSince = 0;
+    // save lightly (not every tap)
+  }
+  ["click","touchstart","keydown"].forEach(ev=>{
+    document.addEventListener(ev, touch, {passive:true});
+  });
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){
+      state.hiddenSince = Date.now();
+    }else{
+      state.hiddenSince = 0;
+      touch();
     }
-    el("btnOnline").classList.add("btn-muted");
-    el("btnOffline").classList.remove("btn-muted");
-  }
-  updateUI();
-}
-el("btnOnline").addEventListener("click",()=>setOnline(true));
-el("btnOffline").addEventListener("click",()=>setOnline(false));
+    saveState();
+  });
 
-let calendarOpen=!!state.calendarOpen;
-function setCalendarOpen(v){
-  calendarOpen=!!v;
-  state.calendarOpen=calendarOpen;
-  saveState();
-  el("calendarWrap").style.display=calendarOpen?"block":"none";
-  el("calendarToggle").textContent=calendarOpen?"閉じる":"表示する";
-  if(calendarOpen)renderCalendar();
-}
-el("calendarTitle").addEventListener("click",()=>setCalendarOpen(!calendarOpen));
-el("calendarToggle").addEventListener("click",()=>setCalendarOpen(!calendarOpen));
-setCalendarOpen(calendarOpen);
-
-function renderCalendar(){
-  const box=el("calendarList");
-  const days=[],now=Date.now();
-  for(let i=0;i<31;i++){
-    const key=businessDayKey(now-i*86400000);
-    if(!days.includes(key))days.push(key);
+  function dayBoundaryResetIfNeeded(){
+    const key=todayKey();
+    if(state.online.lastKey !== key){
+      // reset per business day
+      state.online = {isOn:false,startAt:0,accumulatedMs:0,lastKey:key};
+      // ensure memo box loads right day
+    }
   }
-  box.innerHTML=days.map(k=>{
-    const t=totalsForDay(k);
-    const onlineH=(k===todayKey())?(currentOnlineMs()/3600000):0;
-    const onlineW=onlineH>0?Math.floor(t.sales/onlineH):0;
-    const workH=(t.workMs||0)/3600000;
-    const workW=workH>0?Math.floor(t.sales/workH):0;
-    return `<div class="calDay" data-day="${k}">
-      <div class="calHead">
-        <div class="calDate">${k}</div>
-        <div class="calMetrics">
-          <span>売上: ¥${fmtYen(t.sales)}</span>
-          <span>件数: ${fmtYen(t.count)}回</span>
-          <span>オンライン: ¥${fmtYen(onlineW)}/h</span>
-          <span>実働: ¥${fmtYen(workW)}/h</span>
+
+  function totalsForDay(dayKey){
+    const {start,end}=businessWindow(dayKey);
+    const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end);
+    const quest=state.quest.filter(q=>q.ts>=start&&q.ts<end);
+    const amountSum=runs.reduce((a,r)=>a+(r.amount||0),0);
+    const questSum=quest.reduce((a,q)=>a+(q.amount||0),0);
+    const sales=amountSum+questSum; // チップは含めない
+    const count=runs.reduce((a,r)=>a+(r.count||0),0);
+    const workMinutes=runs.reduce((a,r)=>a+(r.minutes||0),0);
+    const cashSum=runs.reduce((a,r)=>a+(r.cashCollected||0),0);
+    return {sales,count,workMs:workMinutes*60000,questSum,cashSum};
+  }
+
+  function currentOnlineMs(){
+    dayBoundaryResetIfNeeded();
+    const o=state.online;
+    let ms=o.accumulatedMs||0;
+    if(o.isOn && o.startAt) ms += Date.now()-o.startAt;
+    return Math.max(0,ms);
+  }
+  function fmtHHMM(ms){
+    const totalMin=Math.floor(ms/60000);
+    const hh=String(Math.floor(totalMin/60)).padStart(2,"0");
+    const mm=String(totalMin%60).padStart(2,"0");
+    return `${hh}:${mm}`;
+  }
+
+  // run list
+  let runListOpen=false;
+  function renderRunList(){
+    const box=safeEl("runList"); if(!box) return;
+    const {start,end}=businessWindow(todayKey());
+    const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end).slice().reverse();
+    if(!runs.length){box.innerHTML=`<div class="sub" style="margin:6px 0 0;">まだなし</div>`;return;}
+    box.innerHTML=runs.map(r=>{
+      const wage=r.minutes>0?Math.floor(r.amount/(r.minutes/60)):0;
+      return `<div class="runitem">
+        <div><strong>¥${fmtYen(r.amount)}</strong> / ${r.minutes}分 / ${r.count||1}件</div>
+        <div class="small">時給換算：¥${fmtYen(wage)}/h　現金代引き：¥${fmtYen(r.cashCollected||0)}</div>
+      </div>`;
+    }).join("");
+  }
+
+  function autoFixOnlineByFirstRunIfNeeded(){
+    // Only for today
+    const key=todayKey();
+    const {start,end}=businessWindow(key);
+    const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end).slice().sort((a,b)=>a.ts-b.ts);
+    if(!runs.length) return;
+    const first=runs[0];
+    const firstMs=(first.minutes||0)*60000;
+    if(!firstMs) return;
+
+    const onlineMs=currentOnlineMs();
+    if(onlineMs >= firstMs) return;
+
+    const o=state.online;
+    const need = firstMs - onlineMs;
+
+    // If currently on, move startAt earlier
+    if(o.isOn && o.startAt){
+      o.startAt = o.startAt - need;
+    }else{
+      // not on -> bump accumulated
+      o.accumulatedMs = (o.accumulatedMs||0) + need;
+    }
+  }
+
+  function addRun(){
+    const minutes=toInt(safeEl("inputMinutes")?.value);
+    const amount=toInt(safeEl("inputAmount")?.value);
+    const cashCollected=toInt(safeEl("inputCashCollected")?.value);
+    const count=Math.max(1,toInt(safeEl("inputCount")?.value)||1);
+    if(!minutes || !amount){ showToast("時間（分）と金額（円）を入力してね"); return; }
+
+    // id generation safe
+    const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now())+Math.random();
+
+    state.runsLog.push({id,ts:Date.now(),minutes,amount,cashCollected,count});
+    if(safeEl("inputMinutes")) safeEl("inputMinutes").value="";
+    if(safeEl("inputAmount")) safeEl("inputAmount").value="";
+    if(safeEl("inputCashCollected")) safeEl("inputCashCollected").value="";
+    if(safeEl("inputCount")) safeEl("inputCount").value="1";
+
+    // online auto fix (v12)
+    autoFixOnlineByFirstRunIfNeeded();
+
+    showToast(`追加：${minutes}分 / ¥${fmtYen(amount)} / ${count}件`);
+    updateUI();
+  }
+
+  function addQuest(){
+    const a=toInt(safeEl("inputQuest")?.value);
+    if(!a){showToast("クエスト金額を入れてね");return;}
+    const id=(crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now())+Math.random();
+    state.quest.push({id,ts:Date.now(),amount:a});
+    if(safeEl("inputQuest")) safeEl("inputQuest").value="";
+    showToast(`クエスト追加：¥${fmtYen(a)}`);
+    updateUI();
+  }
+  function addCashTip(){
+    const a=toInt(safeEl("inputCashTip")?.value);
+    if(!a){showToast("現金チップ金額を入れてね");return;}
+    const id=(crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now())+Math.random();
+    state.cashTip.push({id,ts:Date.now(),amount:a});
+    if(safeEl("inputCashTip")) safeEl("inputCashTip").value="";
+    showToast(`現金チップ：¥${fmtYen(a)}（※総売上に入れない）`);
+    updateUI();
+  }
+  function resetQuestToday(){
+    const key=todayKey();
+    const {start,end}=businessWindow(key);
+    const before=state.quest.length;
+    state.quest = state.quest.filter(q=>!(q.ts>=start && q.ts<end));
+    const removed = before - state.quest.length;
+    showToast(removed>0 ? `今日のクエストをリセット：${removed}件` : "今日のクエストは0件");
+    updateUI();
+  }
+
+  function setGoal(){
+    state.goal.runs=toInt(safeEl("inputTargetRuns")?.value);
+    state.goal.amount=toInt(safeEl("inputTargetAmount")?.value);
+    showToast("目標を設定した");
+    updateUI();
+  }
+  function resetGoal(){
+    state.goal={runs:0,amount:0};
+    if(safeEl("inputTargetRuns")) safeEl("inputTargetRuns").value="";
+    if(safeEl("inputTargetAmount")) safeEl("inputTargetAmount").value="";
+    showToast("目標をリセットした");
+    updateUI();
+  }
+
+  function setOnline(on, mode="manual"){
+    dayBoundaryResetIfNeeded();
+    const o=state.online;
+    if(on){
+      if(!o.isOn){ o.isOn=true; o.startAt=Date.now(); }
+    }else{
+      if(o.isOn){
+        o.accumulatedMs=(o.accumulatedMs||0)+(Date.now()-(o.startAt||Date.now()));
+        o.startAt=0; o.isOn=false;
+      }
+    }
+    // ui classes
+    const bOn=safeEl("btnOnline"), bOff=safeEl("btnOffline");
+    if(bOn && bOff){
+      if(o.isOn){
+        bOn.classList.remove("btn-muted");
+        bOff.classList.add("btn-muted");
+      }else{
+        bOn.classList.add("btn-muted");
+        bOff.classList.remove("btn-muted");
+      }
+    }
+    if(mode==="auto"){
+      showModal({
+        title:"オフラインにしました",
+        msg:"無操作が続いたため、自動でオフラインにしました。",
+        buttons:[{text:"OK", type:"primary", onClick:()=>{}}]
+      });
+    }
+    updateUI();
+  }
+
+  function openOnlineTimeEditor(){
+    // default: if online is ON, we allow setting start; if OFF allow setting start/end and compute accumulated
+    const key=todayKey();
+    dayBoundaryResetIfNeeded();
+    const o=state.online;
+
+    // use prompt-like modal with simple text inputs
+    showModal({
+      title:"オンライン時間",
+      msg:"やりたい操作を選んでね。",
+      buttons:[
+        {text: o.isOn ? "オフライン" : "オンライン", type:"primary", onClick:()=>setOnline(!o.isOn,"manual")},
+        {text:"時刻を手入力", type:"muted", onClick:()=>openTimeInputModal()},
+        {text:"閉じる", type:"muted", onClick:()=>{}}
+      ]
+    });
+  }
+
+  function openTimeInputModal(){
+    // Build custom modal content using current overlay
+    const ov = safeEl("modalOverlay");
+    const ttl = safeEl("modalTitle");
+    const mm = safeEl("modalMsg");
+    const acts = safeEl("modalActions");
+    if(!ov||!ttl||!mm||!acts) return;
+
+    ttl.textContent="オンライン時刻を手入力";
+    const key=todayKey();
+    const {start,end}=businessWindow(key);
+    dayBoundaryResetIfNeeded();
+    const o=state.online;
+
+    const now=new Date();
+    const pad=(n)=>String(n).padStart(2,"0");
+    // Default values
+    let startVal="", endVal="";
+    if(o.isOn && o.startAt){
+      const d=new Date(o.startAt);
+      startVal = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      endVal = "";
+    }else{
+      // infer from accumulated: end = now, start = now-acc
+      const endD = new Date(Date.now());
+      const startD = new Date(Date.now() - (o.accumulatedMs||0));
+      startVal = `${pad(startD.getHours())}:${pad(startD.getMinutes())}`;
+      endVal = `${pad(endD.getHours())}:${pad(endD.getMinutes())}`;
+    }
+
+    // inject inputs
+    mm.innerHTML = `
+      <div style="font-size:12px;color:rgba(226,232,240,.85);margin-bottom:8px;line-height:1.4;">
+        今日（4時〜）の範囲で入力してね。形式は HH:MM
+      </div>
+      <div class="row" style="gap:8px;">
+        <div>
+          <div class="label">開始（HH:MM）</div>
+          <input type="text" id="tmpStart" inputmode="numeric" placeholder="例 09:30" value="${startVal}">
+        </div>
+        <div>
+          <div class="label">終了（HH:MM）</div>
+          <input type="text" id="tmpEnd" inputmode="numeric" placeholder="例 17:10" value="${endVal}">
         </div>
       </div>
-      <div class="calDetails">
-        <button type="button" class="calBtn" data-openruns="1">配達ログ（さらに開く）</button>
-        <div class="calRuns"></div>
+      <div style="font-size:11px;color:rgba(156,163,175,.95);margin-top:8px;">
+        ※オンライン中に終了を入れると、オフライン扱いで確定します
       </div>
-    </div>`;
-  }).join("");
+    `;
+    acts.innerHTML="";
+    const btnSave=document.createElement("button");
+    btnSave.textContent="反映";
+    btnSave.addEventListener("click",()=>{
+      const s=(safeEl("tmpStart")?.value||"").trim();
+      const e=(safeEl("tmpEnd")?.value||"").trim();
+      const parseHM=(t)=>{
+        const m=t.match(/^\s*(\d{1,2})\s*:\s*(\d{2})\s*$/);
+        if(!m) return null;
+        const hh=parseInt(m[1],10), mm=parseInt(m[2],10);
+        if(hh<0||hh>23||mm<0||mm>59) return null;
+        return {hh,mm};
+      };
+      const ps=parseHM(s);
+      if(!ps){ showToast("開始時刻が不正だよ"); return; }
+      const pe=e?parseHM(e):null;
+      if(e && !pe){ showToast("終了時刻が不正だよ"); return; }
 
-  box.querySelectorAll(".calDay").forEach(dayEl=>{
-    const head=dayEl.querySelector(".calHead");
-    const btn=dayEl.querySelector('[data-openruns="1"]');
-    const runsBox=dayEl.querySelector(".calRuns");
-    const dayKey=dayEl.getAttribute("data-day");
+      const key=todayKey();
+      const [yy,mo,dd]=key.split("-").map(Number);
+      const startTs=new Date(yy,mo-1,dd,ps.hh,ps.mm,0,0).getTime();
+      // business day starts at 4:00
+      const dayStart = new Date(yy,mo-1,dd,4,0,0,0).getTime();
+      const dayEnd = dayStart + 86400000;
 
-    head.addEventListener("click",()=>dayEl.classList.toggle("open"));
+      if(startTs < dayStart || startTs >= dayEnd){ showToast("開始は今日の4時〜翌4時の範囲で"); return; }
 
-    btn.addEventListener("click",(ev)=>{
-      ev.stopPropagation();
-      const open=dayEl.classList.toggle("showruns");
-      if(open){
-        const {start,end}=businessWindow(dayKey);
-        const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end).slice().reverse();
-        if(!runs.length){
-          runsBox.innerHTML=`<div class="sub" style="margin:6px 0 0;">その日の配達ログなし</div>`;
-        }else{
-          runsBox.innerHTML=runs.map(r=>{
-            const wage=r.minutes>0?Math.floor(r.amount/(r.minutes/60)):0;
-            return `<div class="runitem" style="margin-top:8px;">
-              <div><strong>¥${fmtYen(r.amount)}</strong> / ${r.minutes}分 / ${r.count||1}件</div>
-              <div class="small">時給換算：¥${fmtYen(wage)}/h　現金回収：¥${fmtYen(r.cashCollected||0)}</div>
-            </div>`;
-          }).join("");
-        }
-        btn.textContent="閉じる";
+      let endTs = Date.now();
+      if(pe){
+        endTs=new Date(yy,mo-1,dd,pe.hh,pe.mm,0,0).getTime();
+        // allow end after midnight? if end < dayStart, treat as +24h? (for after 0:00〜3:59)
+        if(endTs < dayStart) endTs += 86400000;
+        if(endTs > dayEnd) { showToast("終了は今日の4時〜翌4時の範囲で"); return; }
       }else{
-        btn.textContent="配達ログ（さらに開く）";
+        // online ongoing
       }
+
+      if(pe && endTs <= startTs){ showToast("終了が開始より前になってる"); return; }
+
+      // apply
+      if(pe){
+        state.online.isOn=false;
+        state.online.startAt=0;
+        state.online.accumulatedMs = endTs - startTs;
+        state.online.lastKey = key;
+      }else{
+        state.online.isOn=true;
+        state.online.startAt=startTs;
+        state.online.accumulatedMs=0;
+        state.online.lastKey = key;
+      }
+
+      ov.classList.remove("show");
+      ov.setAttribute("aria-hidden","true");
+      showToast("オンライン時刻を反映した");
+      updateUI();
     });
-  });
-}
+    const btnCancel=document.createElement("button");
+    btnCancel.textContent="キャンセル";
+    btnCancel.className="btn-muted";
+    btnCancel.addEventListener("click",()=>{
+      ov.classList.remove("show");
+      ov.setAttribute("aria-hidden","true");
+    });
+    acts.appendChild(btnCancel);
+    acts.appendChild(btnSave);
 
-function updateUI(){
-  const dayKey=todayKey();
-  const {sales,count,workMs}=totalsForDay(dayKey);
-  const {start,end}=businessWindow(dayKey);
-
-  const questSum=state.quest.filter(q=>q.ts>=start&&q.ts<end).reduce((a,q)=>a+(q.amount||0),0);
-  const cashSum=state.runsLog.filter(r=>r.ts>=start&&r.ts<end).reduce((a,r)=>a+(r.cashCollected||0),0);
-
-  el("questSum").textContent=fmtYen(questSum);
-  el("cashSum").textContent=fmtYen(cashSum);
-
-  const gRuns=toInt(state.goal?.runs||0);
-  const gAmt=toInt(state.goal?.amount||0);
-  el("targetRunsLabel").textContent=gRuns>0?`${gRuns}回`:"なし";
-  el("targetAmountLabel").textContent=gAmt>0?`¥${fmtYen(gAmt)}`:"なし";
-
-  el("totalSales").textContent=fmtYen(sales);
-  el("runCount").textContent=fmtYen(count);
-
-  const onlineMs=currentOnlineMs();
-  el("onlineTime").textContent=fmtHHMM(onlineMs);
-  el("workTime").textContent=fmtHHMM(workMs);
-
-  const onlineH=onlineMs/3600000,workH=workMs/3600000;
-  el("onlineWage").textContent=fmtYen(onlineH>0?Math.floor(sales/onlineH):0);
-  el("workWage").textContent=fmtYen(workH>0?Math.floor(sales/workH):0);
-
-  let ach=0;
-  if(gAmt>0) ach=Math.min(100,Math.floor((sales/gAmt)*100));
-  else if(gRuns>0) ach=Math.min(100,Math.floor((count/gRuns)*100));
-
-  if(gAmt>0||gRuns>0){
-    el("achRow").style.display="flex";
-    el("achFill").style.width=`${ach}%`;
-    el("achText").textContent=`${ach}%`;
-  }else{
-    el("achRow").style.display="none";
+    ov.classList.add("show");
+    ov.setAttribute("aria-hidden","false");
   }
 
-  const met=(gAmt>0&&sales>=gAmt)||(gRuns>0&&count>=gRuns);
-  el("mainStatsCard").classList.toggle("goal-met",met);
+  // calendar
+  let calendarOpen=!!state.calendarOpen;
+  function setCalendarOpen(v){
+    calendarOpen=!!v;
+    const wrap=safeEl("calendarWrap");
+    const btn=safeEl("calendarToggle");
+    if(wrap) wrap.style.display=calendarOpen?"block":"none";
+    if(btn) btn.textContent=calendarOpen?"閉じる":"表示する";
+    if(calendarOpen) renderCalendar();
+    saveState();
+  }
 
-  el("onlineState").style.display=state.online.isOn?"block":"none";
+  function renderCalendar(){
+    const box=safeEl("calendarList"); if(!box) return;
+    const days=[],now=Date.now();
+    for(let i=0;i<31;i++){
+      const key=businessDayKey(now-i*86400000);
+      if(!days.includes(key)) days.push(key);
+    }
+    box.innerHTML=days.map(k=>{
+      const t=totalsForDay(k);
+      const onlineH = (k===todayKey()) ? (currentOnlineMs()/3600000) : 0;
+      const onlineW = onlineH>0 ? Math.floor(t.sales/onlineH) : 0;
+      const workH = (t.workMs||0)/3600000;
+      const workW = workH>0 ? Math.floor(t.sales/workH) : 0;
+      const memo = (state.memos && state.memos[k]) ? state.memos[k] : "";
+      return `<div class="calDay" data-day="${k}">
+        <div class="calHead">
+          <div class="calDate">${k}</div>
+          <div class="calMetrics">
+            <span>売上: ¥${fmtYen(t.sales)}</span>
+            <span>時間: ${fmtHHMM(t.workMs||0)}</span>
+            <span>件数: ${fmtYen(t.count)}回</span>
+            <span>オンライン: ¥${fmtYen(onlineW)}/h</span>
+            <span>実働: ¥${fmtYen(workW)}/h</span>
+            <span>現金: ¥${fmtYen(t.cashSum)}</span>
+            <span>クエスト: ¥${fmtYen(t.questSum)}</span>
+          </div>
+        </div>
+        <div class="calMemo">${memo ? "メモ："+escapeHtml(memo) : "メモ：（なし）"}</div>
+        <div class="calDetails">
+          <button type="button" class="calBtn" data-openruns="1">配達ログ（さらに開く）</button>
+          <div class="calRuns"></div>
+        </div>
+      </div>`;
+    }).join("");
 
-  if(runListOpen) renderRunList();
+    box.querySelectorAll(".calDay").forEach(dayEl=>{
+      const head=dayEl.querySelector(".calHead");
+      const btn=dayEl.querySelector('[data-openruns="1"]');
+      const runsBox=dayEl.querySelector(".calRuns");
+      const dayKey=dayEl.getAttribute("data-day");
 
-  saveState();
-}
+      head.addEventListener("click",()=>dayEl.classList.toggle("open"));
 
-if(state.online.isOn){
-  el("btnOnline").classList.remove("btn-muted");
-  el("btnOffline").classList.add("btn-muted");
-}else{
-  el("btnOnline").classList.add("btn-muted");
-  el("btnOffline").classList.remove("btn-muted");
-}
-setInterval(()=>updateUI(),1000);
-updateUI();
+      btn.addEventListener("click",(ev)=>{
+        ev.stopPropagation();
+        const open=dayEl.classList.toggle("showruns");
+        if(open){
+          const {start,end}=businessWindow(dayKey);
+          const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end).slice().reverse();
+          if(!runs.length){
+            runsBox.innerHTML=`<div class="sub" style="margin:6px 0 0;">その日の配達ログなし</div>`;
+          }else{
+            runsBox.innerHTML=runs.map(r=>{
+              const wage=r.minutes>0?Math.floor(r.amount/(r.minutes/60)):0;
+              return `<div class="runitem" style="margin-top:8px;">
+                <div><strong>¥${fmtYen(r.amount)}</strong> / ${r.minutes}分 / ${r.count||1}件</div>
+                <div class="small">時給換算：¥${fmtYen(wage)}/h　現金代引き：¥${fmtYen(r.cashCollected||0)}</div>
+              </div>`;
+            }).join("");
+          }
+          btn.textContent="閉じる";
+        }else{
+          btn.textContent="配達ログ（さらに開く）";
+        }
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+  }
+
+  function updateUI(){
+    dayBoundaryResetIfNeeded();
+
+    const dayKey=todayKey();
+    const t=totalsForDay(dayKey);
+
+    // top sums
+    if(safeEl("questSum")) safeEl("questSum").textContent=fmtYen(t.questSum);
+    if(safeEl("cashSum")) safeEl("cashSum").textContent=fmtYen(t.cashSum);
+
+    const gRuns=toInt(state.goal?.runs||0);
+    const gAmt=toInt(state.goal?.amount||0);
+    if(safeEl("targetRunsLabel")) safeEl("targetRunsLabel").textContent=gRuns>0?`${gRuns}回`:"なし";
+    if(safeEl("targetAmountLabel")) safeEl("targetAmountLabel").textContent=gAmt>0?`¥${fmtYen(gAmt)}`:"なし";
+
+    if(safeEl("totalSales")) safeEl("totalSales").textContent=fmtYen(t.sales);
+    if(safeEl("runCount")) safeEl("runCount").textContent=fmtYen(t.count);
+
+    const onlineMs=currentOnlineMs();
+    if(safeEl("onlineTime")) safeEl("onlineTime").textContent=fmtHHMM(onlineMs);
+    if(safeEl("workTime")) safeEl("workTime").textContent=fmtHHMM(t.workMs);
+
+    const onlineH=onlineMs/3600000, workH=(t.workMs||0)/3600000;
+    if(safeEl("onlineWage")) safeEl("onlineWage").textContent=fmtYen(onlineH>0?Math.floor(t.sales/onlineH):0);
+    if(safeEl("workWage")) safeEl("workWage").textContent=fmtYen(workH>0?Math.floor(t.sales/workH):0);
+
+    // achievement
+    let ach = 0;
+    if(gAmt>0) ach = Math.floor((t.sales/gAmt)*100);
+    else if(gRuns>0) ach = Math.floor((t.count/gRuns)*100);
+    if(gAmt>0||gRuns>0){
+      if(safeEl("achRow")) safeEl("achRow").style.display="flex";
+      const bar = Math.min(100, Math.max(0, ach));
+      if(safeEl("achFill")) safeEl("achFill").style.width=`${bar}%`;
+      if(safeEl("achText")) safeEl("achText").textContent=`${Math.max(0, ach)}%`;
+    }else{
+      if(safeEl("achRow")) safeEl("achRow").style.display="none";
+    }
+
+    const met=(gAmt>0&&t.sales>=gAmt)||(gRuns>0&&t.count>=gRuns);
+    const main=safeEl("mainStatsCard");
+    if(main) main.classList.toggle("goal-met", met);
+
+    // online indicator
+    const badge=safeEl("onlineBadge");
+    const o=state.online;
+    if(badge) badge.style.display = o.isOn ? "inline" : "none";
+    const stateEl=safeEl("onlineState");
+    if(stateEl) stateEl.style.display = o.isOn ? "block" : "none";
+
+    // runlist if open
+    if(runListOpen) renderRunList();
+
+    // auto offline checks
+    maybeAutoOffline();
+
+    saveState();
+  }
+
+  function maybeAutoOffline(){
+    if(!state.online.isOn) return;
+    const now=Date.now();
+
+    // hidden based
+    if(state.hiddenSince && (now - state.hiddenSince) > HIDDEN_MS){
+      state.hiddenSince = 0;
+      setOnline(false, "auto");
+      return;
+    }
+    // inactive based
+    if((now - (state.lastInteraction||now)) > INACTIVE_MS){
+      setOnline(false, "auto");
+      return;
+    }
+  }
+
+  function bind(){
+    // buttons
+    safeEl("btnAddRun")?.addEventListener("click", addRun);
+    safeEl("btnToggleRunList")?.addEventListener("click", ()=>{
+      runListOpen=!runListOpen;
+      const box=safeEl("runList");
+      if(box) box.style.display = runListOpen ? "block" : "none";
+      if(runListOpen) renderRunList();
+    });
+
+    safeEl("btnAddQuest")?.addEventListener("click", addQuest);
+    safeEl("btnAddCashTip")?.addEventListener("click", addCashTip);
+    safeEl("btnResetQuestToday")?.addEventListener("click", ()=>{
+      showModal({
+        title:"確認",
+        msg:"今日のクエストをリセットする？（過去日は消えない）",
+        buttons:[
+          {text:"やめる", type:"muted", onClick:()=>{}},
+          {text:"リセット", type:"danger", onClick:()=>resetQuestToday()}
+        ]
+      });
+    });
+
+    safeEl("btnGoalSet")?.addEventListener("click", setGoal);
+    safeEl("btnGoalReset")?.addEventListener("click", resetGoal);
+
+    safeEl("btnOnline")?.addEventListener("click", ()=>setOnline(true,"manual"));
+    safeEl("btnOffline")?.addEventListener("click", ()=>setOnline(false,"manual"));
+
+    // calendar open
+    safeEl("calendarTitle")?.addEventListener("click", ()=>setCalendarOpen(!calendarOpen));
+    safeEl("calendarToggle")?.addEventListener("click", ()=>setCalendarOpen(!calendarOpen));
+    setCalendarOpen(!!state.calendarOpen);
+
+    // online time tap
+    safeEl("onlineTimeBox")?.addEventListener("click", openOnlineTimeEditor);
+
+    // memo per day
+    const memoBox=safeEl("inputMemo");
+    if(memoBox){
+      const k=todayKey();
+      memoBox.value = (state.memos && state.memos[k]) ? state.memos[k] : "";
+      memoBox.addEventListener("input", ()=>{
+        const kk=todayKey();
+        state.memos = state.memos || {};
+        state.memos[kk] = memoBox.value || "";
+        saveState();
+      });
+    }
+  }
+
+  function init(){
+    // initialize day key
+    state.online.lastKey = state.online.lastKey || todayKey();
+    dayBoundaryResetIfNeeded();
+
+    // initialize online buttons styles
+    const o=state.online;
+    const bOn=safeEl("btnOnline"), bOff=safeEl("btnOffline");
+    if(bOn && bOff){
+      if(o.isOn){
+        bOn.classList.remove("btn-muted");
+        bOff.classList.add("btn-muted");
+      }else{
+        bOn.classList.add("btn-muted");
+        bOff.classList.remove("btn-muted");
+      }
+    }
+    bind();
+    updateUI();
+    setInterval(updateUI, 1000);
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+
+})();
 </script>
 
 </body>

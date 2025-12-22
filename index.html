@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>配達ドリルトラッカー v12</title>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配達ドリルトラッカー v12.2</title>
 <style>
 :root{
   --bg:#050816;--card:#141a2b;--text:#f5f5f5;--muted:#9ca3af;
@@ -201,8 +199,8 @@ button:active{transform:translateY(1px)}
   </div>
 
   <div class="row" style="margin-top:6px;">
-    <div><div class="label">目標回数（任意）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetRuns" placeholder="未設定でもOK" /></div>
-    <div><div class="label">目標金額（任意・円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetAmount" placeholder="未設定でもOK" /></div>
+    <div><div class="label">目標回数（任意）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetRuns" placeholder="未設定でもOK"></div>
+    <div><div class="label">目標金額（任意・円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetAmount" placeholder="未設定でもOK"></div>
   </div>
 
   <div class="btn-row">
@@ -244,7 +242,7 @@ button:active{transform:translateY(1px)}
     <div>
       <div class="label">件数（件）</div>
       <select id="inputCount">
-        <option value="1" selected>1</option>
+        <option value="1" selected="">1</option>
         <option value="2">2</option>
         <option value="3">3</option>
         <option value="4">4</option>
@@ -254,17 +252,17 @@ button:active{transform:translateY(1px)}
 
     <div>
       <div class="label">金額（円）</div>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320" />
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320">
     </div>
 
     <div>
       <div class="label">現金代引き（円）</div>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashCollected" placeholder="例: 300" />
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashCollected" placeholder="例: 300">
     </div>
 
     <div>
       <div class="label">時間（分）</div>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputMinutes" placeholder="例: 28" />
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputMinutes" placeholder="例: 28">
     </div>
   </div>
 
@@ -278,17 +276,17 @@ button:active{transform:translateY(1px)}
 <div class="card" id="calendarCard">
   <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
   <button type="button" id="calendarToggle" class="calBtn">表示する</button>
-  <div id="calendarWrap">
+  <div id="calendarWrap" style="display: none;">
     <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
     <div id="calendarList" class="calList"></div>
   </div>
 </div>
 
 <div class="card">
-  <div class="center-title" style="font-size:16px;">クエスト & 今日のメモ & 現金チップ</div>
+  <div class="center-title" style="font-size:16px;">クエスト &amp; 今日のメモ &amp; 現金チップ</div>
   <div class="row" style="margin-top:6px;">
-    <div><div class="label">クエスト金額（円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputQuest" placeholder="例: 1200" /></div>
-    <div><div class="label">現金チップ（円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashTip" placeholder="例: 300" /></div>
+    <div><div class="label">クエスト金額（円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputQuest" placeholder="例: 1200"></div>
+    <div><div class="label">現金チップ（円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashTip" placeholder="例: 300"></div>
   </div>
   <div style="margin-top:6px;">
     <div class="label">今日のメモ</div>
@@ -306,8 +304,8 @@ button:active{transform:translateY(1px)}
 <div class="card">
   <div class="center-title" style="font-size:16px;">オンライン</div>
   <div class="btn-row">
-    <button type="button" id="btnOffline" class="btn-muted">オフライン</button>
-    <button type="button" id="btnOnline">オンライン</button>
+    <button type="button" id="btnOffline" class="">オフライン</button>
+    <button type="button" id="btnOnline" class="btn-muted">オンライン</button>
   </div>
   <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
 </div>
@@ -412,9 +410,11 @@ button:active{transform:translateY(1px)}
       else if(b.type==="danger") btn.className="btn-danger";
       // else default gradient button
       btn.addEventListener("click",()=>{
-        try{ b.onClick && b.onClick(); }catch(e){}
+        // Close first, then run the callback.
+        // (Allows callbacks to open another modal using the same overlay.)
         ov.classList.remove("show");
         ov.setAttribute("aria-hidden","true");
+        try{ b.onClick && b.onClick(); }catch(e){}
       });
       acts.appendChild(btn);
     });
@@ -615,6 +615,22 @@ button:active{transform:translateY(1px)}
     updateUI();
   }
 
+  function confirmOffline(){
+    // Require explicit confirmation before going offline (manual actions)
+    if(!state.online.isOn){
+      showToast("すでにオフラインだよ");
+      return;
+    }
+    showModal({
+      title:"確認",
+      msg:"オフラインにする？",
+      buttons:[
+        {text:"やめる", type:"muted", onClick:()=>{}},
+        {text:"OK", type:"primary", onClick:()=>setOnline(false,"manual")}
+      ]
+    });
+  }
+
   function openOnlineTimeEditor(){
     // default: if online is ON, we allow setting start; if OFF allow setting start/end and compute accumulated
     const key=todayKey();
@@ -626,7 +642,10 @@ button:active{transform:translateY(1px)}
       title:"オンライン時間",
       msg:"やりたい操作を選んでね。",
       buttons:[
-        {text: o.isOn ? "オフライン" : "オンライン", type:"primary", onClick:()=>setOnline(!o.isOn,"manual")},
+        {text: o.isOn ? "オフライン" : "オンライン", type:"primary", onClick:()=>{
+          if(o.isOn) confirmOffline();
+          else setOnline(true,"manual");
+        }},
         {text:"時刻を手入力", type:"muted", onClick:()=>openTimeInputModal()},
         {text:"閉じる", type:"muted", onClick:()=>{}}
       ]
@@ -940,7 +959,7 @@ button:active{transform:translateY(1px)}
     safeEl("btnGoalReset")?.addEventListener("click", resetGoal);
 
     safeEl("btnOnline")?.addEventListener("click", ()=>setOnline(true,"manual"));
-    safeEl("btnOffline")?.addEventListener("click", ()=>setOnline(false,"manual"));
+    safeEl("btnOffline")?.addEventListener("click", ()=>confirmOffline());
 
     // calendar open
     safeEl("calendarTitle")?.addEventListener("click", ()=>setCalendarOpen(!calendarOpen));
@@ -991,5 +1010,6 @@ button:active{transform:translateY(1px)}
 })();
 </script>
 
-</body>
-</html>
+
+
+</body></html>

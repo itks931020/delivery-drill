@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 
 <html lang="ja">
@@ -235,6 +234,36 @@ button:active{transform:translateY(1px)}
 .centerPop .line .k{color:rgba(156,163,175,.95); font-weight:800;}
 .centerPop .line .v{font-weight:950;}
 
+
+
+/* delivery complete popup (auto hide) */
+.dcOverlay{
+  position:fixed; inset:0;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(0,0,0,.35);
+  z-index:10000;
+}
+.dcOverlay.show{display:flex;}
+.dcCard{
+  width:min(520px, 92vw);
+  max-width:520px;
+  background:rgba(15,23,42,.96);
+  border:1px solid rgba(59,130,246,.45);
+  border-radius:16px;
+  padding:14px 14px 12px;
+  box-shadow:0 18px 50px rgba(0,0,0,.85);
+  text-align:center;
+}
+.dcTitle{font-weight:950;font-size:16px;margin-bottom:8px;}
+.dcGrid{display:grid;grid-template-columns:1fr;gap:6px;}
+.dcLine{display:flex;justify-content:space-between;gap:10px;
+  background:rgba(2,6,23,.22);
+  border:1px solid rgba(148,163,184,.16);
+  border-radius:12px;padding:10px 12px;
+}
+.dcKey{font-size:12px;color:rgba(156,163,175,.95);font-weight:850;}
+.dcVal{font-size:14px;font-weight:950;color:rgba(226,232,240,.95);}
+
 </style>
 </head>
 <body>
@@ -358,6 +387,21 @@ button:active{transform:translateY(1px)}
 <button class="btn-muted" id="btnReload" type="button">更新</button>
 </div>
 </div>
+
+<!-- delivery complete popup -->
+<div id="dcOverlay" class="dcOverlay" aria-hidden="true">
+  <div class="dcCard" role="status" aria-live="polite">
+    <div class="dcTitle">配達完了💰✨</div>
+    <div class="dcGrid">
+      <div class="dcLine"><div class="dcKey">総売上</div><div class="dcVal" id="dcSales">¥0</div></div>
+      <div class="dcLine"><div class="dcKey">総配達件数</div><div class="dcVal" id="dcRuns">0回</div></div>
+      <div class="dcLine"><div class="dcKey">実働時給換算</div><div class="dcVal" id="dcWorkWage">¥0/h</div></div>
+      <div class="dcLine"><div class="dcKey">オンライン時給換算</div><div class="dcVal" id="dcOnlineWage">¥0/h</div></div>
+      <div class="dcLine"><div class="dcKey">総現金代引き</div><div class="dcVal" id="dcCash">¥0</div></div>
+    </div>
+  </div>
+</div>
+
 <script>
 (() => {
   "use strict";
@@ -432,30 +476,27 @@ const safeEl = (id) => {
   // delivery complete popup (center, auto hide)
   let centerPopTimer = null;
   function showDeliveryCompletePopup(){
-    const ov = safeEl("centerPopOverlay");
-    const box = safeEl("centerPop");
-    if(!ov || !box) return;
+    // 10秒だけ中央ポップアップを表示（PWA/Safariでも確実に出るよう専用レイヤー）
+    const ov=safeEl("dcOverlay");
+    if(!ov) return;
 
-    const key = todayKey();
-    const t = totalsForDay(key);
-    const onlineH = currentOnlineMs() / 3600000;
-    const workH = (t.workMs||0) / 3600000;
-    const onlineW = onlineH>0 ? Math.floor(t.sales / onlineH) : 0;
-    const workW = workH>0 ? Math.floor(t.sales / workH) : 0;
+    const t=totalsForDay(todayKey());
+    const onlineH=(currentOnlineMs()/3600000);
+    const workH=((t.workMs||0)/3600000);
+    const onlineW = onlineH>0 ? Math.floor(t.sales/onlineH) : 0;
+    const workW   = workH>0 ? Math.floor(t.sales/workH)   : 0;
 
-    box.innerHTML = `
-      <div class="ttl">配達完了💰✨</div>
-      <div class="line"><span class="k">総売上</span><span class="v">¥${fmtYen(t.sales)}</span></div>
-      <div class="line"><span class="k">総配達件数</span><span class="v">${fmtYen(t.count)}回</span></div>
-      <div class="line"><span class="k">時給換算</span><span class="v">¥${fmtYen(workW)}/h</span></div>
-      <div class="line"><span class="k">総オンライン時給換算</span><span class="v">¥${fmtYen(onlineW)}/h</span></div>
-      <div class="line"><span class="k">総現金代引き</span><span class="v">¥${fmtYen(t.cashSum)}</span></div>
-    `;
+    safeEl("dcSales") && (safeEl("dcSales").textContent = `¥${fmtYen(t.sales)}`);
+    safeEl("dcRuns") && (safeEl("dcRuns").textContent = `${fmtYen(t.count)}回`);
+    safeEl("dcWorkWage") && (safeEl("dcWorkWage").textContent = `¥${fmtYen(workW)}/h`);
+    safeEl("dcOnlineWage") && (safeEl("dcOnlineWage").textContent = `¥${fmtYen(onlineW)}/h`);
+    safeEl("dcCash") && (safeEl("dcCash").textContent = `¥${fmtYen(t.cashSum)}`);
 
     ov.classList.add("show");
     ov.setAttribute("aria-hidden","false");
-    clearTimeout(centerPopTimer);
-    centerPopTimer = setTimeout(()=>{
+
+    clearTimeout(showDeliveryCompletePopup._t);
+    showDeliveryCompletePopup._t = setTimeout(()=>{
       ov.classList.remove("show");
       ov.setAttribute("aria-hidden","true");
     }, 10000);

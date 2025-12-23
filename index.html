@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 
 <html lang="ja">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>配達ドリルトラッカー v12.5</title>
+<title>配達ドリルトラッカー v12.6</title>
 <style>
 :root{
   --bg:#050816;--card:#141a2b;--text:#f5f5f5;--muted:#9ca3af;
@@ -204,6 +205,36 @@ button:active{transform:translateY(1px)}
   justify-content:flex-end;
 }
 
+
+/* delivery complete popup (center) */
+.centerPopOverlay{
+  position:fixed; inset:0;
+  display:none; align-items:center; justify-content:center;
+  padding:16px; z-index:9998;
+  pointer-events:none;
+}
+.centerPopOverlay.show{display:flex;}
+.centerPop{
+  width:min(420px, 88vw);
+  max-height:25vh;
+  background:rgba(15,23,42,.96);
+  border:1px solid rgba(250,204,21,.65);
+  border-radius:18px;
+  padding:14px 14px 12px;
+  box-shadow:0 18px 50px rgba(0,0,0,.85);
+  text-align:center;
+}
+.centerPop .ttl{
+  font-weight:950; font-size:16px; margin-bottom:8px;
+}
+.centerPop .line{
+  font-size:13px; color:rgba(226,232,240,.92);
+  display:flex; justify-content:space-between; gap:10px;
+  padding:2px 0;
+}
+.centerPop .line .k{color:rgba(156,163,175,.95); font-weight:800;}
+.centerPop .line .v{font-weight:950;}
+
 </style>
 </head>
 <body>
@@ -398,6 +429,40 @@ const safeEl = (id) => {
     clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),5000);
   }
 
+  // delivery complete popup (center, auto hide)
+  let centerPopTimer = null;
+  function showDeliveryCompletePopup(){
+    const ov = safeEl("centerPopOverlay");
+    const box = safeEl("centerPop");
+    if(!ov || !box) return;
+
+    const key = todayKey();
+    const t = totalsForDay(key);
+    const onlineH = currentOnlineMs() / 3600000;
+    const workH = (t.workMs||0) / 3600000;
+    const onlineW = onlineH>0 ? Math.floor(t.sales / onlineH) : 0;
+    const workW = workH>0 ? Math.floor(t.sales / workH) : 0;
+
+    box.innerHTML = `
+      <div class="ttl">配達完了💰✨</div>
+      <div class="line"><span class="k">総売上</span><span class="v">¥${fmtYen(t.sales)}</span></div>
+      <div class="line"><span class="k">総配達件数</span><span class="v">${fmtYen(t.count)}回</span></div>
+      <div class="line"><span class="k">時給換算</span><span class="v">¥${fmtYen(workW)}/h</span></div>
+      <div class="line"><span class="k">総オンライン時給換算</span><span class="v">¥${fmtYen(onlineW)}/h</span></div>
+      <div class="line"><span class="k">総現金代引き</span><span class="v">¥${fmtYen(t.cashSum)}</span></div>
+    `;
+
+    ov.classList.add("show");
+    ov.setAttribute("aria-hidden","false");
+    clearTimeout(centerPopTimer);
+    centerPopTimer = setTimeout(()=>{
+      ov.classList.remove("show");
+      ov.setAttribute("aria-hidden","true");
+    }, 10000);
+  }
+
+
+
   // modal (must ack)
   function showModal({title="通知", msg="", buttons=[{text:"OK", type:"primary", onClick:()=>{}}]}){
     const ov = safeEl("modalOverlay");
@@ -524,8 +589,8 @@ const safeEl = (id) => {
     // online auto fix (v12)
     autoFixOnlineByFirstRunIfNeeded();
 
-    showToast(`追加：${minutes}分 / ¥${fmtYen(amount)} / ${count}件`);
     updateUI();
+    showDeliveryCompletePopup();
   }
 
   function addQuest(){

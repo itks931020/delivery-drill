@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>配達ドリルトラッカー v12.6</title>
+<title>配達ドリルトラッカー v12.8</title>
 <style>
 :root{
   --bg:#050816;--card:#141a2b;--text:#f5f5f5;--muted:#9ca3af;
@@ -197,11 +197,15 @@ button:active{transform:translateY(1px)}
   z-index:5000;
   backdrop-filter: blur(8px);
 }
+.footerVer{font-size:12px;font-weight:950;color:rgba(226,232,240,.85);letter-spacing:.02em}
+
 .footerBar .footerInner{
   width:min(520px,100%);
   margin:0 auto;
   display:flex;
-  justify-content:flex-end;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
 }
 
 
@@ -255,6 +259,15 @@ button:active{transform:translateY(1px)}
   text-align:center;
 }
 .dcTitle{font-weight:950;font-size:16px;margin-bottom:8px;}
+.dcBig{
+  font-weight:950;
+  font-size:15px;
+  line-height:1.55;
+}
+.dcNowLine{margin:2px 0}
+.dcNowLine span{font-size:16px}
+.dcSpacer{height:10px}
+
 .dcGrid{display:grid;grid-template-columns:1fr;gap:6px;}
 .dcLine{display:flex;justify-content:space-between;gap:10px;
   background:rgba(2,6,23,.22);
@@ -383,22 +396,33 @@ button:active{transform:translateY(1px)}
 </div>
 </div>
 <div class="footerBar">
-<div class="footerInner">
-<button class="btn-muted" id="btnReload" type="button">更新</button>
-</div>
+  <div class="footerInner">
+    <div class="footerVer" id="footerVer">v12.8</div>
+    <button class="btn-muted" id="btnReload" type="button">更新</button>
+  </div>
 </div>
 
 <!-- delivery complete popup -->
 <div id="dcOverlay" class="dcOverlay" aria-hidden="true">
-  <div class="dcCard" role="status" aria-live="polite">
-    <div class="dcTitle">配達完了💰✨</div>
-    <div class="dcGrid">
-      <div class="dcLine"><div class="dcKey">総売上</div><div class="dcVal" id="dcSales">¥0</div></div>
-      <div class="dcLine"><div class="dcKey">総配達件数</div><div class="dcVal" id="dcRuns">0回</div></div>
-      <div class="dcLine"><div class="dcKey">実働時給換算</div><div class="dcVal" id="dcWorkWage">¥0/h</div></div>
-      <div class="dcLine"><div class="dcKey">オンライン時給換算</div><div class="dcVal" id="dcOnlineWage">¥0/h</div></div>
-      <div class="dcLine"><div class="dcKey">総現金代引き</div><div class="dcVal" id="dcCash">¥0</div></div>
+  <div class="dcToast">
+    <div class="dcTitle" id="dcTitle">✨💰配達完了💰✨</div>
+
+    <div class="dcBig">
+      <div class="dcNowLine">今回の売上：<span id="dcNowSales">¥0</span></div>
+      <div class="dcNowLine">配達時間：<span id="dcNowMinutes">0分</span></div>
+      <div class="dcNowLine">時給換算：<span id="dcNowWage">¥0/h</span></div>
     </div>
+
+    <div class="dcSpacer"></div>
+
+    <div class="dcGrid" id="dcGrid">
+      <div class="dcLine"><span>総売上</span><span id="dcSales">¥0</span></div>
+      <div class="dcLine"><span>総配達件数</span><span id="dcRuns">0回</span></div>
+      <div class="dcLine"><span>総オンライン時給換算</span><span id="dcOnlineWage">¥0/h</span></div>
+      <div class="dcLine"><span>総現金代引き</span><span id="dcCash">¥0</span></div>
+    </div>
+  </div>
+</div>
   </div>
 </div>
 
@@ -406,6 +430,7 @@ button:active{transform:translateY(1px)}
 (() => {
   "use strict";
 
+  const APP_VERSION = "v12.8";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -475,28 +500,33 @@ const safeEl = (id) => {
 
   // delivery complete popup (center, auto hide)
   let centerPopTimer = null;
-  function showDeliveryCompletePopup(){
-    // 10秒だけ中央ポップアップを表示（PWA/Safariでも確実に出るよう専用レイヤー）
-    const ov=safeEl("dcOverlay");
-    if(!ov) return;
+  function showDeliveryCompletePopup(nowRun){
+    const ov=safeEl("dcOverlay"); if(!ov) return;
 
-    const t=totalsForDay(todayKey());
-    const onlineH=(currentOnlineMs()/3600000);
-    const workH=((t.workMs||0)/3600000);
+    const dayKey=todayKey();
+    const t=totalsForDay(dayKey);
+
+    // totals
+    const onlineH = currentOnlineMs()/3600000;
     const onlineW = onlineH>0 ? Math.floor(t.sales/onlineH) : 0;
-    const workW   = workH>0 ? Math.floor(t.sales/workH)   : 0;
 
-    safeEl("dcSales") && (safeEl("dcSales").textContent = `¥${fmtYen(t.sales)}`);
-    safeEl("dcRuns") && (safeEl("dcRuns").textContent = `${fmtYen(t.count)}回`);
-    safeEl("dcWorkWage") && (safeEl("dcWorkWage").textContent = `¥${fmtYen(workW)}/h`);
-    safeEl("dcOnlineWage") && (safeEl("dcOnlineWage").textContent = `¥${fmtYen(onlineW)}/h`);
-    safeEl("dcCash") && (safeEl("dcCash").textContent = `¥${fmtYen(t.cashSum)}`);
+    if(safeEl("dcSales")) safeEl("dcSales").textContent = `¥${fmtYen(t.sales)}`;
+    if(safeEl("dcRuns")) safeEl("dcRuns").textContent = `${fmtYen(t.count)}回`;
+    if(safeEl("dcOnlineWage")) safeEl("dcOnlineWage").textContent = `¥${fmtYen(onlineW)}/h`;
+    if(safeEl("dcCash")) safeEl("dcCash").textContent = `¥${fmtYen(t.cashSum)}`;
+
+    // current run
+    const amt = nowRun?.amount || 0;
+    const mins = nowRun?.minutes || 0;
+    const wage = (mins>0) ? Math.floor(amt / (mins/60)) : 0;
+    if(safeEl("dcNowSales")) safeEl("dcNowSales").textContent = `¥${fmtYen(amt)}`;
+    if(safeEl("dcNowMinutes")) safeEl("dcNowMinutes").textContent = `${fmtYen(mins)}分`;
+    if(safeEl("dcNowWage")) safeEl("dcNowWage").textContent = `¥${fmtYen(wage)}/h`;
 
     ov.classList.add("show");
     ov.setAttribute("aria-hidden","false");
-
-    clearTimeout(showDeliveryCompletePopup._t);
-    showDeliveryCompletePopup._t = setTimeout(()=>{
+    clearTimeout(dcTimer);
+    dcTimer=setTimeout(()=>{
       ov.classList.remove("show");
       ov.setAttribute("aria-hidden","true");
     }, 10000);
@@ -631,7 +661,7 @@ const safeEl = (id) => {
     autoFixOnlineByFirstRunIfNeeded();
 
     updateUI();
-    showDeliveryCompletePopup();
+    showDeliveryCompletePopup({amount, minutes});
   }
 
   function addQuest(){
@@ -1036,6 +1066,7 @@ const safeEl = (id) => {
       }
     }
     bind();
+    const fv=safeEl("footerVer"); if(fv) fv.textContent = APP_VERSION;
     updateUI();
     setInterval(updateUI, 1000);
   }

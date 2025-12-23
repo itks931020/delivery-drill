@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 
 <html lang="ja">
@@ -536,8 +537,8 @@ const safeEl = (id) => {
 
     ov.classList.add("show");
     ov.setAttribute("aria-hidden","false");
-    clearTimeout(dcTimer);
-    dcTimer=setTimeout(()=>{
+    clearTimeout(centerPopTimer);
+    centerPopTimer=setTimeout(()=>{
       ov.classList.remove("show");
       ov.setAttribute("aria-hidden","true");
     }, 10000);
@@ -1043,6 +1044,15 @@ const safeEl = (id) => {
 
     // online time tap
     safeEl("onlineTimeBox")?.addEventListener("click", openOnlineTimeEditor);
+
+    // delivery complete popup: tap to close
+    const dcOv = safeEl("dcOverlay");
+    if(dcOv){
+      dcOv.addEventListener("click", ()=>{
+        dcOv.classList.remove("show");
+        clearTimeout(centerPopTimer);
+      });
+    }
 
     // memo per day
     const memoBox=safeEl("inputMemo");

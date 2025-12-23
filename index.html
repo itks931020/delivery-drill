@@ -1,7 +1,10 @@
-<html lang="ja"><head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>配達ドリルトラッカー v12.4</title>
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>配達ドリルトラッカー v12.5</title>
 <style>
 :root{
   --bg:#050816;--card:#141a2b;--text:#f5f5f5;--muted:#9ca3af;
@@ -204,156 +207,132 @@ button:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
-
 <h1>配達ドリルトラッカー</h1>
 <div class="sub">午前4時で日付が切り替わる（Uberの締めに合わせる）。金額・時間・件数は手打ち。</div>
-
 <div class="card sparkle" id="topSummaryCard">
-  <div class="row">
-    <div class="dash"><div class="label">クエスト合計</div><div class="dash-value">¥<span id="questSum">0</span></div></div>
-    <div class="dash"><div class="label">現金代引き合計</div><div class="dash-value">¥<span id="cashSum">0</span></div></div>
-    <div class="dash"><div class="label">目標回数</div><div class="dash-value"><span id="targetRunsLabel">なし</span></div></div>
-    <div class="dash"><div class="label">目標金額</div><div class="dash-value"><span id="targetAmountLabel">なし</span></div></div>
-  </div>
-
-  <div class="row" style="margin-top:6px;">
-    <div><div class="label">目標回数（任意）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetRuns" placeholder="未設定でもOK"></div>
-    <div><div class="label">目標金額（任意・円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetAmount" placeholder="未設定でもOK"></div>
-  </div>
-
-  <div class="btn-row">
-    <button class="btn-muted" id="btnGoalReset">目標リセット</button>
-    <button class="btn-goal" id="btnGoalSet">目標設定</button>
-  </div>
+<div class="row">
+<div class="dash"><div class="label">クエスト合計</div><div class="dash-value">¥<span id="questSum">0</span></div></div>
+<div class="dash"><div class="label">現金代引き合計</div><div class="dash-value">¥<span id="cashSum">0</span></div></div>
+<div class="dash"><div class="label">目標回数</div><div class="dash-value"><span id="targetRunsLabel">なし</span></div></div>
+<div class="dash"><div class="label">目標金額</div><div class="dash-value"><span id="targetAmountLabel">なし</span></div></div>
 </div>
-
+<div class="row" style="margin-top:6px;">
+<div><div class="label">目標回数（任意）</div><input id="inputTargetRuns" inputmode="numeric" pattern="[0-9]*" placeholder="未設定でもOK" type="text"/></div>
+<div><div class="label">目標金額（任意・円）</div><input id="inputTargetAmount" inputmode="numeric" pattern="[0-9]*" placeholder="未設定でもOK" type="text"/></div>
+</div>
+<div class="btn-row">
+<button class="btn-muted" id="btnGoalReset">目標リセット</button>
+<button class="btn-goal" id="btnGoalSet">目標設定</button>
+</div>
+</div>
 <div class="card sparkle" id="mainStatsCard">
-  <div class="top-row">
-    <div class="label">総売上（クエスト込み）</div>
-    <div class="value">¥<span id="totalSales">0</span></div>
-  </div>
-
-  <div class="ach" id="achRow" style="display:none;">
-    <div class="achL">達成率</div>
-    <div class="achBar"><div class="achFill" id="achFill"></div></div>
-    <div class="achR" id="achText">0%</div>
-  </div>
-
-  <div class="triple">
-    <div><div class="k">配達回数</div><div class="v"><span id="runCount">0</span>回</div></div>
-    <div id="onlineTimeBox"><div class="k">オンライン時間<span id="onlineBadge" class="onlineBadge" style="display:none;">online</span></div><div class="v"><span id="onlineTime">00:00</span></div></div>
-    <div><div class="k">実働時間</div><div class="v"><span id="workTime">00:00</span></div></div>
-  </div>
-
-  <div class="double">
-    <div><div class="k">オンライン時給換算</div><div class="v">¥<span id="onlineWage">0</span>/h</div></div>
-    <div><div class="k">実働時給換算</div><div class="v">¥<span id="workWage">0</span>/h</div></div>
-  </div>
-
-  <div class="onlineTapHint">オンライン時間をタップ：オンライン/オフライン切替・時刻修正</div>
+<div class="top-row">
+<div class="label">総売上（クエスト込み）</div>
+<div class="value">¥<span id="totalSales">0</span></div>
 </div>
-
+<div class="ach" id="achRow" style="display:none;">
+<div class="achL">達成率</div>
+<div class="achBar"><div class="achFill" id="achFill"></div></div>
+<div class="achR" id="achText">0%</div>
+</div>
+<div class="triple">
+<div><div class="k">配達回数</div><div class="v"><span id="runCount">0</span>回</div></div>
+<div id="onlineTimeBox"><div class="k">オンライン時間<span class="onlineBadge" id="onlineBadge" style="display:none;">online</span></div><div class="v"><span id="onlineTime">00:00</span></div></div>
+<div><div class="k">実働時間</div><div class="v"><span id="workTime">00:00</span></div></div>
+</div>
+<div class="double">
+<div><div class="k">オンライン時給換算</div><div class="v">¥<span id="onlineWage">0</span>/h</div></div>
+<div><div class="k">実働時給換算</div><div class="v">¥<span id="workWage">0</span>/h</div></div>
+</div>
+<div class="onlineTapHint">オンライン時間をタップ：オンライン/オフライン切替・時刻修正</div>
+</div>
 <div class="card">
-  <div class="center-title" style="font-size:16px;">配達案件</div>
-
-  <div class="deliveryGrid">
-    <div>
-      <div class="label">件数（件）</div>
-      <select id="inputCount">
-        <option value="1" selected="">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-        <option value="5">5</option>
-      </select>
-    </div>
-
-    <div>
-      <div class="label">金額（円）</div>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320">
-    </div>
-
-    <div>
-      <div class="label">現金代引き（円）</div>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashCollected" placeholder="例: 300">
-    </div>
-
-    <div>
-      <div class="label">時間（分）</div>
-      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputMinutes" placeholder="例: 28">
-    </div>
-  </div>
-
-  <div class="btn-row">
-    <button class="btn-muted" id="btnToggleRunList">配達済み案件</button>
-    <button id="btnAddRun">追加</button>
-  </div>
-  <div id="runList" class="runlist"></div>
+<div class="center-title" style="font-size:16px;">配達案件</div>
+<div class="deliveryGrid">
+<div>
+<div class="label">件数（件）</div>
+<select id="inputCount">
+<option selected="" value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+<option value="5">5</option>
+</select>
 </div>
-
+<div>
+<div class="label">金額（円）</div>
+<input id="inputAmount" inputmode="numeric" pattern="[0-9]*" placeholder="例: 1320" type="text"/>
+</div>
+<div>
+<div class="label">現金代引き（円）</div>
+<input id="inputCashCollected" inputmode="numeric" pattern="[0-9]*" placeholder="例: 300" type="text"/>
+</div>
+<div>
+<div class="label">時間（分）</div>
+<input id="inputMinutes" inputmode="numeric" pattern="[0-9]*" placeholder="例: 28" type="text"/>
+</div>
+</div>
+<div class="btn-row">
+<button class="btn-muted" id="btnToggleRunList">配達済み案件</button>
+<button id="btnAddRun">追加</button>
+</div>
+<div class="runlist" id="runList"></div>
+</div>
 <div class="card" id="calendarCard">
-  <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
-  <button type="button" id="calendarToggle" class="calBtn">表示する</button>
-  <div id="calendarWrap" style="display: none;">
-    <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
-    <div id="calendarList" class="calList"></div>
-  </div>
+<div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
+<button class="calBtn" id="calendarToggle" type="button">表示する</button>
+<div id="calendarWrap">
+<div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
+<div class="calList" id="calendarList"></div>
 </div>
-
+</div>
 <div class="card">
-  <div class="center-title" style="font-size:16px;">クエスト &amp; 今日のメモ &amp; 現金チップ</div>
-  <div class="row" style="margin-top:6px;">
-    <div><div class="label">クエスト金額（円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputQuest" placeholder="例: 1200"></div>
-    <div><div class="label">現金チップ（円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashTip" placeholder="例: 300"></div>
-  </div>
-  <div style="margin-top:6px;">
-    <div class="label">今日のメモ</div>
-    <textarea id="inputMemo" placeholder="メモ"></textarea>
-  </div>
-  <div class="btn-row">
-    <button class="btn-quest" id="btnAddQuest">クエスト追加</button>
-    <button class="btn-cash" id="btnAddCashTip">現金チップ</button>
-  </div>
-  <div class="btn-row">
-    <button class="btn-danger" id="btnResetQuestToday">クエスト今日分リセット</button>
-  </div>
+<div class="center-title" style="font-size:16px;">クエスト &amp; 今日のメモ &amp; 現金チップ</div>
+<div class="row" style="margin-top:6px;">
+<div><div class="label">クエスト金額（円）</div><input id="inputQuest" inputmode="numeric" pattern="[0-9]*" placeholder="例: 1200" type="text"/></div>
+<div><div class="label">現金チップ（円）</div><input id="inputCashTip" inputmode="numeric" pattern="[0-9]*" placeholder="例: 300" type="text"/></div>
 </div>
-
+<div style="margin-top:6px;">
+<div class="label">今日のメモ</div>
+<textarea id="inputMemo" placeholder="メモ"></textarea>
+</div>
+<div class="btn-row">
+<button class="btn-quest" id="btnAddQuest">クエスト追加</button>
+<button class="btn-cash" id="btnAddCashTip">現金チップ</button>
+</div>
+<div class="btn-row">
+<button class="btn-danger" id="btnResetQuestToday">クエスト今日分リセット</button>
+<button class="btn-danger" id="btnResetAll">全てリセット</button>
+</div>
+</div>
 <div class="card">
-  <div class="center-title" style="font-size:16px;">オンライン</div>
-  <div class="btn-row">
-    <button type="button" id="btnOffline" class="">オフライン</button>
-    <button type="button" id="btnOnline" class="btn-muted">オンライン</button>
-  </div>
-  <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
+<div class="center-title" style="font-size:16px;">オンライン</div>
+<div class="btn-row">
+<button class="btn-muted" id="btnOffline" type="button">オフライン</button>
+<button id="btnOnline" type="button">オンライン</button>
 </div>
-
-<div id="toast" class="toast"></div>
-
+<div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
+</div>
+<div class="toast" id="toast"></div>
 <!-- modal -->
-<div id="modalOverlay" class="modalOverlay" aria-hidden="true">
-  <div class="modalToast">
-    <div class="ttl" id="modalTitle">通知</div>
-    <div class="msg" id="modalMsg">メッセージ</div>
-    <div class="actions" id="modalActions"></div>
-  </div>
+<div aria-hidden="true" class="modalOverlay" id="modalOverlay">
+<div class="modalToast">
+<div class="ttl" id="modalTitle">通知</div>
+<div class="msg" id="modalMsg">メッセージ</div>
+<div class="actions" id="modalActions"></div>
 </div>
-
-
+</div>
 <div class="footerBar">
-  <div class="footerInner">
-    <button type="button" id="btnReload" class="btn-muted">更新</button>
-  </div>
+<div class="footerInner">
+<button class="btn-muted" id="btnReload" type="button">更新</button>
 </div>
-
+</div>
 <script>
 (() => {
   "use strict";
 
   const STORE_KEY = "ddt_store_v12";
-
-  const el = (id) => document.getElementById(id);
-  const safeEl = (id) => {
+const safeEl = (id) => {
     const n = document.getElementById(id);
     return n || null;
   };
@@ -398,9 +377,17 @@ button:active{transform:translateY(1px)}
     }catch(e){return structuredClonePoly(defaultState);}
   }
   let state = loadState();
-  function saveState(){
+  let dirty = false;
+  let lastSaveAt = 0;
+  const markDirty = ()=>{ dirty = true; };
+
+  function saveState(force=false){
     state.calendarOpen = calendarOpen;
-    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    const now = Date.now();
+    if(!force && !dirty && (now - lastSaveAt) < 15000) return;
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+    dirty = false;
+    lastSaveAt = now;
   }
 
   // toasts
@@ -518,6 +505,7 @@ button:active{transform:translateY(1px)}
   }
 
   function addRun(){
+    markDirty();
     const minutes=toInt(safeEl("inputMinutes")?.value);
     const amount=toInt(safeEl("inputAmount")?.value);
     const cashCollected=toInt(safeEl("inputCashCollected")?.value);
@@ -541,6 +529,7 @@ button:active{transform:translateY(1px)}
   }
 
   function addQuest(){
+    markDirty();
     const a=toInt(safeEl("inputQuest")?.value);
     if(!a){showToast("クエスト金額を入れてね");return;}
     const id=(crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now())+Math.random();
@@ -550,6 +539,7 @@ button:active{transform:translateY(1px)}
     updateUI();
   }
   function addCashTip(){
+    markDirty();
     const a=toInt(safeEl("inputCashTip")?.value);
     if(!a){showToast("現金チップ金額を入れてね");return;}
     const id=(crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now())+Math.random();
@@ -559,6 +549,7 @@ button:active{transform:translateY(1px)}
     updateUI();
   }
   function resetQuestToday(){
+    markDirty();
     const key=todayKey();
     const {start,end}=businessWindow(key);
     const before=state.quest.length;
@@ -569,12 +560,14 @@ button:active{transform:translateY(1px)}
   }
 
   function setGoal(){
+    markDirty();
     state.goal.runs=toInt(safeEl("inputTargetRuns")?.value);
     state.goal.amount=toInt(safeEl("inputTargetAmount")?.value);
     showToast("目標を設定した");
     updateUI();
   }
   function resetGoal(){
+    markDirty();
     state.goal={runs:0,amount:0};
     if(safeEl("inputTargetRuns")) safeEl("inputTargetRuns").value="";
     if(safeEl("inputTargetAmount")) safeEl("inputTargetAmount").value="";
@@ -583,6 +576,7 @@ button:active{transform:translateY(1px)}
   }
 
   function setOnline(on, mode="manual"){
+    markDirty();
     dayBoundaryResetIfNeeded();
     const o=state.online;
     if(on){
@@ -638,132 +632,81 @@ button:active{transform:translateY(1px)}
           if(o.isOn) confirmOffline();
           else setOnline(true,"manual");
         }},
-        {text:"時刻を手入力", type:"muted", onClick:()=>openTimeInputModal()},
+        {text:"オンライン時間を手入力", type:"muted", onClick:()=>openTimeInputModal()},
         {text:"閉じる", type:"muted", onClick:()=>{}}
       ]
     });
   }
 
-  function openTimeInputModal(){
-    // Build custom modal content using current overlay
+    function openTimeInputModal(){
+    // Online duration input (HH:MM). User inputs the ONLINE TIME itself, not start/end timestamps.
     const ov = safeEl("modalOverlay");
     const ttl = safeEl("modalTitle");
-    const mm = safeEl("modalMsg");
-    const acts = safeEl("modalActions");
+    const mm  = safeEl("modalMsg");
+    const acts= safeEl("modalActions");
     if(!ov||!ttl||!mm||!acts) return;
 
-    ttl.textContent="オンライン時刻を手入力";
-    const key=todayKey();
-    const {start,end}=businessWindow(key);
+    ttl.textContent = "オンライン時間を手入力";
     dayBoundaryResetIfNeeded();
-    const o=state.online;
 
-    const now=new Date();
+    const o = state.online;
     const pad=(n)=>String(n).padStart(2,"0");
-    // Default values
-    let startVal="", endVal="";
-    if(o.isOn && o.startAt){
-      const d=new Date(o.startAt);
-      startVal = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      endVal = "";
-    }else{
-      // infer from accumulated: end = now, start = now-acc
-      const endD = new Date(Date.now());
-      const startD = new Date(Date.now() - (o.accumulatedMs||0));
-      startVal = `${pad(startD.getHours())}:${pad(startD.getMinutes())}`;
-      endVal = `${pad(endD.getHours())}:${pad(endD.getMinutes())}`;
-    }
+    const curMs = currentOnlineMs();
+    const curMin = Math.floor(curMs/60000);
+    const defHH = pad(Math.floor(curMin/60));
+    const defMM = pad(curMin%60);
 
-    // inject inputs
     mm.innerHTML = `
       <div style="font-size:12px;color:rgba(226,232,240,.85);margin-bottom:8px;line-height:1.4;">
-        今日（4時〜）の範囲で入力してね。形式は HH:MM
+        今日（4時区切り）の「オンライン時間」そのものを入れてね。形式は HH:MM
       </div>
-      <div class="row" style="gap:8px;">
-        <div>
-          <div class="label">開始（HH:MM）</div>
-          <input type="text" id="tmpStart" inputmode="numeric" placeholder="例 09:30" value="${startVal}">
-        </div>
-        <div>
-          <div class="label">終了（HH:MM）</div>
-          <input type="text" id="tmpEnd" inputmode="numeric" placeholder="例 17:10" value="${endVal}">
-        </div>
+      <div>
+        <div class="label">オンライン時間（HH:MM）</div>
+        <input type="text" id="tmpDur" inputmode="numeric" placeholder="例 02:15" value="${defHH}:${defMM}">
       </div>
       <div style="font-size:11px;color:rgba(156,163,175,.95);margin-top:8px;">
-        ※オンライン中に終了を入れると、オフライン扱いで確定します
+        ※反映すると、いったんオフライン扱いで確定します（必要なら再度オンライン押してOK）
       </div>
     `;
-    acts.innerHTML="";
-    const btnSave=document.createElement("button");
-    btnSave.textContent="反映";
-    btnSave.addEventListener("click",()=>{
-      const s=(safeEl("tmpStart")?.value||"").trim();
-      const e=(safeEl("tmpEnd")?.value||"").trim();
-      const parseHM=(t)=>{
-        const m=t.match(/^\s*(\d{1,2})\s*:\s*(\d{2})\s*$/);
-        if(!m) return null;
-        const hh=parseInt(m[1],10), mm=parseInt(m[2],10);
-        if(hh<0||hh>23||mm<0||mm>59) return null;
-        return {hh,mm};
-      };
-      const ps=parseHM(s);
-      if(!ps){ showToast("開始時刻が不正だよ"); return; }
-      const pe=e?parseHM(e):null;
-      if(e && !pe){ showToast("終了時刻が不正だよ"); return; }
 
-      const key=todayKey();
-      const [yy,mo,dd]=key.split("-").map(Number);
-      const startTs=new Date(yy,mo-1,dd,ps.hh,ps.mm,0,0).getTime();
-      // business day starts at 4:00
-      const dayStart = new Date(yy,mo-1,dd,4,0,0,0).getTime();
-      const dayEnd = dayStart + 86400000;
+    acts.innerHTML = "";
+    const btnCancel = document.createElement("button");
+    btnCancel.textContent = "キャンセル";
+    btnCancel.className = "btn-muted";
+    btnCancel.addEventListener("click", ()=>{
+      ov.classList.remove("show");
+      ov.setAttribute("aria-hidden","true");
+    });
 
-      if(startTs < dayStart || startTs >= dayEnd){ showToast("開始は今日の4時〜翌4時の範囲で"); return; }
+    const btnSave = document.createElement("button");
+    btnSave.textContent = "反映";
+    btnSave.addEventListener("click", ()=>{
+      const s = (safeEl("tmpDur")?.value || "").trim();
+      const m = s.match(/^\s*(\d{1,2})\s*:\s*(\d{2})\s*$/);
+      if(!m){ showToast("形式が違うよ（HH:MM）"); return; }
+      const hh = parseInt(m[1],10), mmv = parseInt(m[2],10);
+      if(hh<0 || hh>23 || mmv<0 || mmv>59){ showToast("時間が不正だよ"); return; }
 
-      let endTs = Date.now();
-      if(pe){
-        endTs=new Date(yy,mo-1,dd,pe.hh,pe.mm,0,0).getTime();
-        // allow end after midnight? if end < dayStart, treat as +24h? (for after 0:00〜3:59)
-        if(endTs < dayStart) endTs += 86400000;
-        if(endTs > dayEnd) { showToast("終了は今日の4時〜翌4時の範囲で"); return; }
-      }else{
-        // online ongoing
-      }
+      const durMs = (hh*60 + mmv) * 60000;
 
-      if(pe && endTs <= startTs){ showToast("終了が開始より前になってる"); return; }
-
-      // apply
-      if(pe){
-        state.online.isOn=false;
-        state.online.startAt=0;
-        state.online.accumulatedMs = endTs - startTs;
-        state.online.lastKey = key;
-      }else{
-        state.online.isOn=true;
-        state.online.startAt=startTs;
-        state.online.accumulatedMs=0;
-        state.online.lastKey = key;
-      }
+      // Apply as fixed accumulated duration for today
+      state.online.isOn = false;
+      state.online.startAt = 0;
+      state.online.accumulatedMs = durMs;
+      state.online.lastKey = todayKey();
 
       ov.classList.remove("show");
       ov.setAttribute("aria-hidden","true");
-      showToast("オンライン時刻を反映した");
+      showToast("オンライン時間を反映した");
       updateUI();
     });
-    const btnCancel=document.createElement("button");
-    btnCancel.textContent="キャンセル";
-    btnCancel.className="btn-muted";
-    btnCancel.addEventListener("click",()=>{
-      ov.classList.remove("show");
-      ov.setAttribute("aria-hidden","true");
-    });
+
     acts.appendChild(btnCancel);
     acts.appendChild(btnSave);
 
     ov.classList.add("show");
     ov.setAttribute("aria-hidden","false");
   }
-
   // calendar
   let calendarOpen=!!state.calendarOpen;
   function setCalendarOpen(v){
@@ -927,7 +870,20 @@ button:active{transform:translateY(1px)}
       });
     });
 
-    safeEl("btnGoalSet")?.addEventListener("click", setGoal);
+
+    safeEl("btnResetAll")?.addEventListener("click", ()=>{
+      showModal({
+        title:"確認",
+        msg:"全ての入力をリセットする？（配達ログ・クエスト・目標・メモ・オンライン時間など全部消える）",
+        buttons:[
+          {text:"やめる", type:"muted", onClick:()=>{}},
+          {text:"リセット", type:"danger", onClick:()=>{
+            try{ localStorage.removeItem(STORE_KEY); }catch(e){}
+            location.reload();
+          }}
+        ]
+      });
+    });    safeEl("btnGoalSet")?.addEventListener("click", setGoal);
     safeEl("btnGoalReset")?.addEventListener("click", resetGoal);
 
     safeEl("btnOnline")?.addEventListener("click", ()=>setOnline(true,"manual"));
@@ -950,6 +906,7 @@ button:active{transform:translateY(1px)}
         const kk=todayKey();
         state.memos = state.memos || {};
         state.memos[kk] = memoBox.value || "";
+        markDirty();
         saveState();
       });
     }
@@ -981,7 +938,5 @@ button:active{transform:translateY(1px)}
 
 })();
 </script>
-
-
-
-</body></html>
+</body>
+</html>

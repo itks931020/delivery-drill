@@ -1,11 +1,7 @@
-
-<!DOCTYPE html>
-
-<html lang="ja">
-<head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>配達ドリルトラッカー v12.8</title>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<title>配達ドリルトラッカー v13.0</title>
 <style>
 :root{
   --bg:#050816;--card:#141a2b;--text:#f5f5f5;--muted:#9ca3af;
@@ -89,6 +85,8 @@ button:active{transform:translateY(1px)}
 }
 .top-row .label{font-size:12px;color:#e5e7eb}
 .top-row .value{font-size:26px;font-weight:900;margin-top:2px;text-shadow:0 10px 22px rgba(0,0,0,.5)}
+.top-row-wage .label{font-size:12px;color:#e5e7eb}
+.top-row-wage .value{font-size:26px;font-weight:900;margin-top:2px;text-shadow:0 10px 22px rgba(0,0,0,.5)}
 .triple{display:flex;gap:6px;margin-top:6px}
 .triple>div,.double>div{
   flex:1;min-width:0;
@@ -270,14 +268,15 @@ button:active{transform:translateY(1px)}
   box-shadow:0 18px 50px rgba(0,0,0,.85);
   text-align:center;
 }
-.dcTitle{font-weight:950;font-size:16px;margin-bottom:8px;}
+.dcTitle{font-weight:950;font-size:18px;margin-bottom:10px;text-align:center;}
 .dcBig{
   font-weight:950;
-  font-size:15px;
-  line-height:1.55;
+  font-size:16px;
+  line-height:1.6;
+  text-align:center;
 }
 .dcNowLine{margin:2px 0}
-.dcNowLine span{font-size:16px}
+.dcNowLine span{font-size:18px}
 .dcSpacer{height:10px}
 
 .dcGrid{display:grid;grid-template-columns:1fr;gap:6px;}
@@ -294,79 +293,99 @@ button:active{transform:translateY(1px)}
 <body>
 <h1>配達ドリルトラッカー</h1>
 <div class="sub">午前4時で日付が切り替わる（Uberの締めに合わせる）。金額・時間・件数は手打ち。</div>
-<div class="card sparkle" id="topSummaryCard">
-<div class="row">
-<div class="dash"><div class="label">クエスト合計</div><div class="dash-value">¥<span id="questSum">0</span></div></div>
-<div class="dash"><div class="label">現金代引き合計</div><div class="dash-value">¥<span id="cashSum">0</span></div></div>
-<div class="dash"><div class="label">目標回数</div><div class="dash-value"><span id="targetRunsLabel">なし</span></div></div>
-<div class="dash"><div class="label">目標金額</div><div class="dash-value"><span id="targetAmountLabel">なし</span></div></div>
-</div>
-<div class="row" style="margin-top:6px;">
-<div><div class="label">目標回数（任意）</div><input id="inputTargetRuns" inputmode="numeric" pattern="[0-9]*" placeholder="未設定でもOK" type="text"/></div>
-<div><div class="label">目標金額（任意・円）</div><input id="inputTargetAmount" inputmode="numeric" pattern="[0-9]*" placeholder="未設定でもOK" type="text"/></div>
-</div>
-<div class="btn-row">
-<button class="btn-muted" id="btnGoalReset">目標リセット</button>
-<button class="btn-goal" id="btnGoalSet">目標設定</button>
-</div>
-</div>
+
+
 <div class="card sparkle" id="mainStatsCard">
-<div class="top-row">
-<div class="label">総売上（クエスト込み）</div>
-<div class="value">¥<span id="totalSales">0</span></div>
+  <div class="top-row">
+    <div class="label">総売上（クエスト込み）</div>
+    <div class="value">¥<span id="totalSales">0</span></div>
+  </div>
+
+  <div class="ach" id="achRow" style="display:none;">
+    <div class="achL">達成率</div>
+    <div class="achBar"><div class="achFill" id="achFill"></div></div>
+    <div class="achR" id="achText">0%</div>
+  </div>
+
+    <div class="top-row top-row-wage" style="margin-top:6px;">
+    <div class="label">オンライン時給換算</div>
+    <div class="value">¥<span id="onlineWage">0</span>/h</div>
+  </div>
+
+  <div class="row" style="margin-top:6px;">
+    <div class="dash"><div class="label">配達回数</div><div class="dash-value"><span id="runCount">0</span>回</div></div>
+    <div class="dash" id="onlineTimeBox"><div class="label">オンライン時間<span id="onlineBadge" class="onlineBadge" style="display:none;">online</span></div><div class="dash-value"><span id="onlineTime">00:00</span></div></div>
+  </div>
+
+  <div class="row" style="margin-top:6px;">
+    <div class="dash"><div class="label">実働時間</div><div class="dash-value"><span id="workTime">00:00</span></div></div>
+    <div class="dash"><div class="label">実働時給換算</div><div class="dash-value">¥<span id="workWage">0</span>/h</div></div>
+  </div>
+
+  <div class="onlineTapHint">オンライン時間をタップ：オンライン/オフライン切替・時刻修正</div>
 </div>
-<div class="ach" id="achRow" style="display:none;">
-<div class="achL">達成率</div>
-<div class="achBar"><div class="achFill" id="achFill"></div></div>
-<div class="achR" id="achText">0%</div>
-</div>
-<div class="triple">
-<div><div class="k">配達回数</div><div class="v"><span id="runCount">0</span>回</div></div>
-<div id="onlineTimeBox"><div class="k">オンライン時間<span class="onlineBadge" id="onlineBadge" style="display:none;">online</span></div><div class="v"><span id="onlineTime">00:00</span></div></div>
-<div><div class="k">実働時間</div><div class="v"><span id="workTime">00:00</span></div></div>
-</div>
-<div class="double">
-<div><div class="k">オンライン時給換算</div><div class="v">¥<span id="onlineWage">0</span>/h</div></div>
-<div><div class="k">実働時給換算</div><div class="v">¥<span id="workWage">0</span>/h</div></div>
-</div>
-<div class="onlineTapHint">オンライン時間をタップ：オンライン/オフライン切替・時刻修正</div>
-</div>
+
 <div class="card">
-<div class="center-title" style="font-size:16px;">配達案件</div>
-<div class="deliveryGrid">
-<div>
-<div class="label">件数（件）</div>
-<select id="inputCount">
-<option selected="" value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-<option value="5">5</option>
-</select>
+  <div class="center-title" style="font-size:16px;">配達案件</div>
+
+  <div class="deliveryGrid">
+    <div>
+      <div class="label">件数（件）</div>
+      <select id="inputCount">
+        <option value="1" selected="">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+
+    <div>
+      <div class="label">金額（円）</div>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputAmount" placeholder="例: 1320">
+    </div>
+
+    <div>
+      <div class="label">現金代引き（円）</div>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputCashCollected" placeholder="例: 300">
+    </div>
+
+    <div>
+      <div class="label">時間（分）</div>
+      <input type="text" inputmode="numeric" pattern="[0-9]*" id="inputMinutes" placeholder="例: 28">
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-muted" id="btnToggleRunList">配達済み案件</button>
+    <button id="btnAddRun">追加</button>
+  </div>
+  <div id="runList" class="runlist"></div>
 </div>
-<div>
-<div class="label">金額（円）</div>
-<input id="inputAmount" inputmode="numeric" pattern="[0-9]*" placeholder="例: 1320" type="text"/>
+
+<div class="card sparkle" id="topSummaryCard">
+  <div class="row">
+    <div class="dash"><div class="label">クエスト合計</div><div class="dash-value">¥<span id="questSum">0</span></div></div>
+    <div class="dash"><div class="label">現金代引き合計</div><div class="dash-value">¥<span id="cashSum">0</span></div></div>
+    <div class="dash"><div class="label">目標回数</div><div class="dash-value"><span id="targetRunsLabel">なし</span></div></div>
+    <div class="dash"><div class="label">目標金額</div><div class="dash-value"><span id="targetAmountLabel">なし</span></div></div>
+  </div>
+
+  <div class="row" style="margin-top:6px;">
+    <div><div class="label">目標回数（任意）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetRuns" placeholder="未設定でもOK"></div>
+    <div><div class="label">目標金額（任意・円）</div><input type="text" inputmode="numeric" pattern="[0-9]*" id="inputTargetAmount" placeholder="未設定でもOK"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-muted" id="btnGoalReset">目標リセット</button>
+    <button class="btn-goal" id="btnGoalSet">目標設定</button>
+  </div>
 </div>
-<div>
-<div class="label">現金代引き（円）</div>
-<input id="inputCashCollected" inputmode="numeric" pattern="[0-9]*" placeholder="例: 300" type="text"/>
-</div>
-<div>
-<div class="label">時間（分）</div>
-<input id="inputMinutes" inputmode="numeric" pattern="[0-9]*" placeholder="例: 28" type="text"/>
-</div>
-</div>
-<div class="btn-row">
-<button class="btn-muted" id="btnToggleRunList">配達済み案件</button>
-<button id="btnAddRun">追加</button>
-</div>
-<div class="runlist" id="runList"></div>
-</div>
+
 <div class="card" id="calendarCard">
 <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
 <button class="calBtn" id="calendarToggle" type="button">表示する</button>
-<div id="calendarWrap">
+<div id="calendarWrap" style="display: none;">
 <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
 <div class="calList" id="calendarList"></div>
 </div>
@@ -374,8 +393,8 @@ button:active{transform:translateY(1px)}
 <div class="card">
 <div class="center-title" style="font-size:16px;">クエスト &amp; 今日のメモ &amp; 現金チップ</div>
 <div class="row" style="margin-top:6px;">
-<div><div class="label">クエスト金額（円）</div><input id="inputQuest" inputmode="numeric" pattern="[0-9]*" placeholder="例: 1200" type="text"/></div>
-<div><div class="label">現金チップ（円）</div><input id="inputCashTip" inputmode="numeric" pattern="[0-9]*" placeholder="例: 300" type="text"/></div>
+<div><div class="label">クエスト金額（円）</div><input id="inputQuest" inputmode="numeric" pattern="[0-9]*" placeholder="例: 1200" type="text"></div>
+<div><div class="label">現金チップ（円）</div><input id="inputCashTip" inputmode="numeric" pattern="[0-9]*" placeholder="例: 300" type="text"></div>
 </div>
 <div style="margin-top:6px;">
 <div class="label">今日のメモ</div>
@@ -393,8 +412,8 @@ button:active{transform:translateY(1px)}
 <div class="card">
 <div class="center-title" style="font-size:16px;">オンライン</div>
 <div class="btn-row">
-<button class="btn-muted" id="btnOffline" type="button">オフライン</button>
-<button id="btnOnline" type="button">オンライン</button>
+<button class="" id="btnOffline" type="button">オフライン</button>
+<button id="btnOnline" type="button" class="btn-muted">オンライン</button>
 </div>
 <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
 </div>
@@ -409,7 +428,7 @@ button:active{transform:translateY(1px)}
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v12.8</div>
+    <div class="footerVer" id="footerVer">v13.0</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -435,14 +454,14 @@ button:active{transform:translateY(1px)}
     </div>
   </div>
 </div>
-  </div>
-</div>
+  
+
 
 <script>
 (() => {
   "use strict";
 
-  const APP_VERSION = "v12.8";
+  const APP_VERSION = "v13.0";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -538,11 +557,16 @@ const safeEl = (id) => {
     ov.classList.add("show");
     ov.setAttribute("aria-hidden","false");
     clearTimeout(centerPopTimer);
-    centerPopTimer=setTimeout(()=>{
-      ov.classList.remove("show");
-      ov.setAttribute("aria-hidden","true");
-    }, 10000);
+    centerPopTimer=setTimeout(()=>{ closeDeliveryCompletePopup(); }, 10000);
   }
+
+function closeDeliveryCompletePopup(){
+  const ov=safeEl("dcOverlay"); if(!ov) return;
+  ov.classList.remove("show");
+  ov.setAttribute("aria-hidden","true");
+  if(centerPopTimer){ clearTimeout(centerPopTimer); centerPopTimer=null; }
+}
+
 
 
 
@@ -614,18 +638,109 @@ const safeEl = (id) => {
   // run list
   let runListOpen=false;
   function renderRunList(){
-    const box=safeEl("runList"); if(!box) return;
-    const {start,end}=businessWindow(todayKey());
-    const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end).slice().reverse();
-    if(!runs.length){box.innerHTML=`<div class="sub" style="margin:6px 0 0;">まだなし</div>`;return;}
-    box.innerHTML=runs.map(r=>{
-      const wage=r.minutes>0?Math.floor(r.amount/(r.minutes/60)):0;
-      return `<div class="runitem">
-        <div><strong>¥${fmtYen(r.amount)}</strong> / ${r.minutes}分 / ${r.count||1}件</div>
-        <div class="small">時給換算：¥${fmtYen(wage)}/h　現金代引き：¥${fmtYen(r.cashCollected||0)}</div>
-      </div>`;
-    }).join("");
+  const box=safeEl("runList"); if(!box) return;
+  const {start,end}=businessWindow(todayKey());
+  const runs=state.runsLog.filter(r=>r.ts>=start&&r.ts<end).slice().reverse();
+  if(!runs.length){
+    box.innerHTML=`<div class="sub" style="margin:6px 0 0;">まだなし</div>`;
+    return;
   }
+  box.innerHTML=runs.map(r=>{
+    const wage=r.minutes>0?Math.floor(r.amount/(r.minutes/60)):0;
+    const id=escapeHtml(r.id);
+    return `<div class="runitem" data-runid="${id}">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
+        <div><strong>¥${fmtYen(r.amount)}</strong> / ${r.minutes}分 / ${r.count||1}件</div>
+        <button type="button" class="btn-muted" data-edit="${id}" style="padding:8px 12px;font-weight:950;">修正</button>
+      </div>
+      <div class="small">時給換算：¥${fmtYen(wage)}/h　現金代引き：¥${fmtYen(r.cashCollected||0)}</div>
+    </div>`;
+  }).join("");
+
+  box.querySelectorAll('button[data-edit]').forEach(btn=>{
+    btn.addEventListener('click',(ev)=>{
+      ev.stopPropagation();
+      const id=btn.getAttribute('data-edit');
+      openRunEditModal(id);
+    });
+  });
+}
+
+function openRunEditModal(runId){
+  const run = state.runsLog.find(r=>String(r.id)===String(runId));
+  if(!run){ showToast("対象の配達ログが見つからない"); return; }
+
+  const ov = safeEl("modalOverlay");
+  const ttl = safeEl("modalTitle");
+  const mm  = safeEl("modalMsg");
+  const acts= safeEl("modalActions");
+  if(!ov||!ttl||!mm||!acts) return;
+
+  ttl.textContent="配達ログを修正";
+  mm.innerHTML = `
+    <div class="row" style="gap:8px;">
+      <div>
+        <div class="label">件数（件）</div>
+        <select id="tmpEditCount">
+          ${[1,2,3,4,5].map(n=>`<option value="${n}" ${Number(run.count||1)===n?'selected':''}>${n}</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <div class="label">時間（分）</div>
+        <input type="text" id="tmpEditMinutes" inputmode="numeric" pattern="[0-9]*" value="${fmtYen(run.minutes||0).replace(/,/g,'')}" />
+      </div>
+    </div>
+    <div class="row" style="gap:8px;margin-top:8px;">
+      <div>
+        <div class="label">金額（円）</div>
+        <input type="text" id="tmpEditAmount" inputmode="numeric" pattern="[0-9]*" value="${fmtYen(run.amount||0).replace(/,/g,'')}" />
+      </div>
+      <div>
+        <div class="label">現金代引き（円）</div>
+        <input type="text" id="tmpEditCash" inputmode="numeric" pattern="[0-9]*" value="${fmtYen(run.cashCollected||0).replace(/,/g,'')}" />
+      </div>
+    </div>
+    <div style="font-size:11px;color:rgba(156,163,175,.95);margin-top:8px;">
+      ※日付は変更しません（そのまま）
+    </div>
+  `;
+
+  acts.innerHTML="";
+  const btnCancel=document.createElement("button");
+  btnCancel.textContent="キャンセル";
+  btnCancel.className="btn-muted";
+  btnCancel.addEventListener("click",()=>{
+    ov.classList.remove("show");
+    ov.setAttribute("aria-hidden","true");
+  });
+
+  const btnSave=document.createElement("button");
+  btnSave.textContent="反映";
+  btnSave.addEventListener("click",()=>{
+    const count = Math.max(1, toInt(safeEl("tmpEditCount")?.value) || 1);
+    const minutes = Math.max(0, toInt(safeEl("tmpEditMinutes")?.value));
+    const amount  = Math.max(0, toInt(safeEl("tmpEditAmount")?.value));
+    const cashCollected = Math.max(0, toInt(safeEl("tmpEditCash")?.value));
+
+    if(!minutes || !amount){ showToast("時間（分）と金額（円）は必須"); return; }
+
+    run.count = count;
+    run.minutes = minutes;
+    run.amount = amount;
+    run.cashCollected = cashCollected;
+
+    ov.classList.remove("show");
+    ov.setAttribute("aria-hidden","true");
+    showToast("配達ログを修正した");
+    updateUI();
+  });
+
+  acts.appendChild(btnCancel);
+  acts.appendChild(btnSave);
+
+  ov.classList.add("show");
+  ov.setAttribute("aria-hidden","false");
+}
 
   function autoFixOnlineByFirstRunIfNeeded(){
     // Only for today
@@ -787,74 +902,81 @@ const safeEl = (id) => {
   }
 
     function openTimeInputModal(){
-    // Online duration input (HH:MM). User inputs the ONLINE TIME itself, not start/end timestamps.
-    const ov = safeEl("modalOverlay");
-    const ttl = safeEl("modalTitle");
-    const mm  = safeEl("modalMsg");
-    const acts= safeEl("modalActions");
-    if(!ov||!ttl||!mm||!acts) return;
+  // Online duration input via dropdowns (HH + MM).
+  const ov = safeEl("modalOverlay");
+  const ttl = safeEl("modalTitle");
+  const mm  = safeEl("modalMsg");
+  const acts= safeEl("modalActions");
+  if(!ov||!ttl||!mm||!acts) return;
 
-    ttl.textContent = "オンライン時間を手入力";
-    dayBoundaryResetIfNeeded();
+  ttl.textContent="オンライン時間を入力";
+  dayBoundaryResetIfNeeded();
 
-    const o = state.online;
-    const pad=(n)=>String(n).padStart(2,"0");
-    const curMs = currentOnlineMs();
-    const curMin = Math.floor(curMs/60000);
-    const defHH = pad(Math.floor(curMin/60));
-    const defMM = pad(curMin%60);
+  const curMin = Math.floor((currentOnlineMs()||0)/60000);
+  const curH = Math.min(24, Math.floor(curMin/60));
+  const curM = Math.min(59, curMin%60);
 
-    mm.innerHTML = `
-      <div style="font-size:12px;color:rgba(226,232,240,.85);margin-bottom:8px;line-height:1.4;">
-        今日（4時区切り）の「オンライン時間」そのものを入れてね。形式は HH:MM
+  const hourOpts = Array.from({length:25},(_,i)=>`<option value="${i}" ${i===curH?'selected':''}>${i}時間</option>`).join("");
+  const minOpts = Array.from({length:61},(_,i)=>{
+    const label = (i===60) ? "60分" : `${i}分`;
+    const sel = (i===curM) ? 'selected' : '';
+    return `<option value="${i}" ${sel}>${label}</option>`;
+  }).join("");
+
+  mm.innerHTML = `
+    <div style="font-size:12px;color:rgba(226,232,240,.85);margin-bottom:8px;line-height:1.4;">
+      今日（4時〜）の <strong>オンライン時間そのもの</strong> を選択してね（1分刻み）
+    </div>
+    <div class="row" style="gap:8px;">
+      <div>
+        <div class="label">時間</div>
+        <select id="tmpDurH">${hourOpts}</select>
       </div>
       <div>
-        <div class="label">オンライン時間（HH:MM）</div>
-        <input type="text" id="tmpDur" inputmode="numeric" placeholder="例 02:15" value="${defHH}:${defMM}">
+        <div class="label">分</div>
+        <select id="tmpDurM">${minOpts}</select>
       </div>
-      <div style="font-size:11px;color:rgba(156,163,175,.95);margin-top:8px;">
-        ※反映すると、いったんオフライン扱いで確定します（必要なら再度オンライン押してOK）
-      </div>
-    `;
+    </div>
+  `;
 
-    acts.innerHTML = "";
-    const btnCancel = document.createElement("button");
-    btnCancel.textContent = "キャンセル";
-    btnCancel.className = "btn-muted";
-    btnCancel.addEventListener("click", ()=>{
-      ov.classList.remove("show");
-      ov.setAttribute("aria-hidden","true");
-    });
+  acts.innerHTML="";
+  const btnCancel=document.createElement("button");
+  btnCancel.textContent="キャンセル";
+  btnCancel.className="btn-muted";
+  btnCancel.addEventListener("click",()=>{
+    ov.classList.remove("show");
+    ov.setAttribute("aria-hidden","true");
+  });
 
-    const btnSave = document.createElement("button");
-    btnSave.textContent = "反映";
-    btnSave.addEventListener("click", ()=>{
-      const s = (safeEl("tmpDur")?.value || "").trim();
-      const m = s.match(/^\s*(\d{1,2})\s*:\s*(\d{2})\s*$/);
-      if(!m){ showToast("形式が違うよ（HH:MM）"); return; }
-      const hh = parseInt(m[1],10), mmv = parseInt(m[2],10);
-      if(hh<0 || hh>23 || mmv<0 || mmv>59){ showToast("時間が不正だよ"); return; }
+  const btnSave=document.createElement("button");
+  btnSave.textContent="反映";
+  btnSave.addEventListener("click",()=>{
+    const hh = toInt(safeEl("tmpDurH")?.value);
+    const mmv = toInt(safeEl("tmpDurM")?.value);
 
-      const durMs = (hh*60 + mmv) * 60000;
+    let totalMin = (hh*60) + mmv;
+    if(mmv===60) totalMin = (Math.min(24, hh+1)*60); // 60分は繰り上げ
+    totalMin = Math.max(0, Math.min(24*60, totalMin));
 
-      // Apply as fixed accumulated duration for today
-      state.online.isOn = false;
-      state.online.startAt = 0;
-      state.online.accumulatedMs = durMs;
-      state.online.lastKey = todayKey();
+    const durMs = totalMin * 60000;
 
-      ov.classList.remove("show");
-      ov.setAttribute("aria-hidden","true");
-      showToast("オンライン時間を反映した");
-      updateUI();
-    });
+    state.online.isOn = false;
+    state.online.startAt = 0;
+    state.online.accumulatedMs = durMs;
+    state.online.lastKey = todayKey();
 
-    acts.appendChild(btnCancel);
-    acts.appendChild(btnSave);
+    ov.classList.remove("show");
+    ov.setAttribute("aria-hidden","true");
+    showToast("オンライン時間を反映した");
+    updateUI();
+  });
 
-    ov.classList.add("show");
-    ov.setAttribute("aria-hidden","false");
-  }
+  acts.appendChild(btnCancel);
+  acts.appendChild(btnSave);
+
+  ov.classList.add("show");
+  ov.setAttribute("aria-hidden","false");
+}
   // calendar
   let calendarOpen=!!state.calendarOpen;
   function setCalendarOpen(v){
@@ -1032,7 +1154,16 @@ const safeEl = (id) => {
         ]
       });
     });    safeEl("btnGoalSet")?.addEventListener("click", setGoal);
-    safeEl("btnGoalReset")?.addEventListener("click", resetGoal);
+    safeEl("btnGoalReset")?.addEventListener("click", ()=>{
+      showModal({
+        title:"確認",
+        msg:"目標をリセットする？",
+        buttons:[
+          {text:"やめる", type:"muted", onClick:()=>{}},
+          {text:"リセット", type:"danger", onClick:()=>resetGoal()}
+        ]
+      });
+    });
 
     safeEl("btnOnline")?.addEventListener("click", ()=>setOnline(true,"manual"));
     safeEl("btnOffline")?.addEventListener("click", ()=>confirmOffline());
@@ -1048,10 +1179,7 @@ const safeEl = (id) => {
     // delivery complete popup: tap to close
     const dcOv = safeEl("dcOverlay");
     if(dcOv){
-      dcOv.addEventListener("click", ()=>{
-        dcOv.classList.remove("show");
-        clearTimeout(centerPopTimer);
-      });
+      dcOv.addEventListener("click", closeDeliveryCompletePopup);
     }
 
     // memo per day
@@ -1096,5 +1224,6 @@ const safeEl = (id) => {
 
 })();
 </script>
-</body>
-</html>
+
+
+</body></html>

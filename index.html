@@ -295,8 +295,10 @@ button:active{transform:translateY(1px)}
 /* quick memo */
 #quickMemoCard .subtitle{ color:#666; font-size:12px; }
 .qm-item{ padding:10px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; margin-top:8px; cursor:pointer; }
-.qm-item.qm-hit{ border-color:rgba(250,204,21,.85); box-shadow:0 0 0 2px rgba(250,204,21,.18); background:linear-gradient(135deg,rgba(250,204,21,.12),#fff); }
-.qm-item mark{ background:rgba(250,204,21,.45); padding:0 2px; border-radius:4px; }
+.qm-item.qm-hit{
+  border-color: rgba(59,130,246,.55);
+  background: rgba(59,130,246,.10);
+}
 
 .qm-top{ display:flex; gap:10px; align-items:baseline; }
 .qm-title{ font-weight:700; font-size:14px; flex:1; }
@@ -397,7 +399,7 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card" id="calendarCard">
 <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
 <button class="calBtn" id="calendarToggle" type="button">表示する</button>
-<div id="calendarWrap">
+<div id="calendarWrap" style="display: none;">
 <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
 <div class="calList" id="calendarList"></div>
 </div>
@@ -406,7 +408,6 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card" id="quickMemoCard">
   <div class="center-title" style="font-size:16px;">メモ（端末内のみ）</div>
   <div class="subtitle" style="text-align:center; margin-top:2px;">※共有・送信なし / ショートカット検索連携OK</div>
-  <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;"></div>
 
   <div class="row" style="margin-top:8px;">
     <div style="flex:1;">
@@ -423,7 +424,9 @@ mark{ padding:0 2px; border-radius:3px; }
     <button class="btn-muted" id="btnQmExport">エクスポート</button>
     <button class="btn-muted" id="btnQmImport">インポート</button>
     <input type="file" id="qmImportFile" accept="application/json" style="display:none;">
-  </div>
+    <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;">登録件数：0件</div>
+
+</div>
 
   <div id="qmResultsWrap" style="display:none; margin-top:10px;">
     <div class="label" id="qmResultsLabel">検索結果</div>
@@ -476,8 +479,8 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card">
 <div class="center-title" style="font-size:16px;">オンライン</div>
 <div class="btn-row">
-<button class="btn-muted" id="btnOffline" type="button">オフライン</button>
-<button id="btnOnline" type="button">オンライン</button>
+<button class="" id="btnOffline" type="button">オフライン</button>
+<button id="btnOnline" type="button" class="btn-muted">オンライン</button>
 </div>
 <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
 </div>
@@ -492,7 +495,7 @@ mark{ padding:0 2px; border-radius:3px; }
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v13.7</div>
+    <div class="footerVer" id="footerVer">v13.8</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -521,11 +524,27 @@ mark{ padding:0 2px; border-radius:3px; }
   
 
 
+
+<!-- Quick memo maintenance (hidden) -->
+<div id="qmMaintOverlay" class="dcOverlay" aria-hidden="true" style="display:none;">
+  <div class="dcCard" style="max-width:520px;">
+    <div class="dcTitle">メモ管理</div>
+    <div class="subtitle" style="text-align:center; margin-top:-2px;">長押しで開く / 誤操作防止のため確認あり</div>
+    <div class="btn-row" style="margin-top:10px;">
+      <button class="btn-muted" id="btnQmMaintExport">エクスポート</button>
+      <button class="btn-muted" id="btnQmMaintImport">インポート</button>
+    </div>
+    <button class="btn-danger" id="btnQmResetAllMemos" style="width:100%; margin-top:10px;">全メモを削除</button>
+    <button class="btn-muted" id="btnQmMaintClose" style="width:100%; margin-top:10px;">閉じる</button>
+  </div>
+</div>
+
 <script>
+
 (() => {
   "use strict";
 
-  const APP_VERSION = "v13.5";
+  const APP_VERSION = "v13.8";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -1370,7 +1389,34 @@ function openRunEditModal(runId){
     // initial state
     qmUpdateVisibility();
 
-  }
+  
+    // long-press on count to open maintenance
+    const cntEl = safeEl("qmCount");
+    if(cntEl){
+      let lpTimer=null;
+      const startLP=()=>{
+        clearTimeout(lpTimer);
+        lpTimer=setTimeout(()=>{ qmMaintOpen(); }, 700);
+      };
+      const cancelLP=()=>{ clearTimeout(lpTimer); lpTimer=null; };
+      cntEl.addEventListener("touchstart", startLP, {passive:true});
+      cntEl.addEventListener("touchend", cancelLP);
+      cntEl.addEventListener("touchmove", cancelLP);
+      cntEl.addEventListener("mousedown", startLP);
+      cntEl.addEventListener("mouseup", cancelLP);
+      cntEl.addEventListener("mouseleave", cancelLP);
+    }
+
+    // maintenance overlay buttons
+    safeEl("btnQmMaintClose")?.addEventListener("click", qmMaintClose);
+    safeEl("btnQmMaintExport")?.addEventListener("click", ()=>{ qmMaintClose(); qmExport(); });
+    safeEl("btnQmMaintImport")?.addEventListener("click", ()=>{ qmMaintClose(); safeEl("qmImportFile")?.click(); });
+    safeEl("btnQmResetAllMemos")?.addEventListener("click", qmResetAllMemos);
+    safeEl("qmMaintOverlay")?.addEventListener("click", (e)=>{
+      if(e.target && e.target.id==="qmMaintOverlay") qmMaintClose();
+    });
+
+}
 
   
   // ===== Quick Memos (端末内メモ) =====
@@ -1422,86 +1468,27 @@ function openRunEditModal(runId){
       const total = qmEnsureArray().length;
       if(cnt) cnt.textContent = `登録件数：${total}件`;
     }catch(e){}
-    if(!wrap || !box) return;
 
+    if(!wrap || !box) return;
     const q=(box.value||"").trim();
     const focused = (document.activeElement===box);
 
-    // 未入力＆非フォーカス → 件数だけ
+    // 未入力＆非フォーカス → 件数だけ表示、結果欄は隠す
     if(!q && !focused){
       wrap.style.display="none";
       if(cnt) cnt.style.display="block";
       return;
     }
 
-    // フォーカス中 or クエリあり → 結果枠を出す
+    // 入力あり or フォーカス中 → 結果欄を表示（ただし未入力なら中はガイドだけ）
     wrap.style.display="block";
     if(cnt) cnt.style.display="none";
 
     const lab=safeEl("qmResultsLabel");
-    if(lab) lab.textContent = q ? `検索結果（${q}）` : "検索ワードを入力";
+    if(lab) lab.textContent = q ? `検索結果（${q}）` : "検索（入力すると結果が出ます）";
   }
 
   function qmRender(){
-    qmUpdateVisibility();
-    const wrap=safeEl("qmResultsWrap");
-    // 非表示中はDOM更新しない（軽量化）
-    if(wrap && wrap.style.display==="none") return;
-
-    const list=safeEl("qmList");
-    if(!list) return;
-
-    const box=safeEl("qmSearch");
-    const q=(box?.value || "").trim();
-
-    // 未入力時は一覧を出さない（件数表示に戻す）
-    if(!q){
-      list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">検索ワードを入力してください</div>`;
-      return;
-    }
-
-    const qLower = q.toLowerCase();
-    const arr=qmEnsureArray().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-    const filtered = arr.filter(it=>{
-      const hay = (it.title||"") + "
-" + (it.body||"");
-      return hay.toLowerCase().includes(qLower);
-    });
-
-    // 返しすぎると重いので上限
-    const LIMIT = 120;
-    const limited = filtered.slice(0, LIMIT);
-
-    if(!limited.length){
-      list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">（ヒットなし）</div>`;
-      return;
-    }
-
-    list.innerHTML = limited.map(it=>{
-      const title = it.title ? qmHighlight(it.title, q) : `<span style="color:#666;">（一言なし）</span>`;
-      const snippet = qmHighlight(qmSnippet(it.body), q);
-      const meta = qmFmt(it.updatedAt||it.createdAt||0);
-      return `
-        <div class="qm-item qm-hit" data-qmid="${qmEscape(it.id)}">
-          <div class="qm-top">
-            <div class="qm-title">${title}</div>
-            <div class="qm-meta">${qmEscape(meta)}</div>
-          </div>
-          <div class="qm-snippet">${snippet}</div>
-        </div>
-      `;
-    }).join("");
-
-    // bind item clicks
-    list.querySelectorAll(".qm-item").forEach(el=>{
-      el.addEventListener("click", ()=>{
-        const id=el.getAttribute("data-qmid");
-        qmOpen(id);
-      });
-    });
-  }
-
-  function qmOpen{
     qmUpdateVisibility();
     const wrap=safeEl("qmResultsWrap");
     // 非表示中はDOM更新しない（軽量化）
@@ -1539,7 +1526,7 @@ function openRunEditModal(runId){
       const snippet = qmHighlight(qmSnippet(it.body), q);
       const meta = qmFmt(it.updatedAt||it.createdAt||0);
       return `
-        <div class="qm-item" data-qmid="${qmEscape(it.id)}">
+        <div class="qm-item qm-hit" data-qmid="${qmEscape(it.id)}">
           <div class="qm-top">
             <div class="qm-title">${title}</div>
             <div class="qm-meta">${qmEscape(meta)}</div>
@@ -1586,6 +1573,36 @@ function openRunEditModal(runId){
     ov.setAttribute("aria-hidden","true");
     qmEditingId = null;
   }
+
+  function qmMaintOpen(){
+    const ov=safeEl("qmMaintOverlay");
+    if(!ov) return;
+    ov.style.display="flex";
+    ov.setAttribute("aria-hidden","false");
+  }
+  function qmMaintClose(){
+    const ov=safeEl("qmMaintOverlay");
+    if(!ov) return;
+    ov.style.display="none";
+    ov.setAttribute("aria-hidden","true");
+  }
+  function qmResetAllMemos(){
+    // 2段階確認（誤操作防止）
+    const ok1 = confirm("保存しているメモを全件削除します。よろしいですか？");
+    if(!ok1) return;
+    const ok2 = confirm("最終確認：本当に削除します。元に戻せません。");
+    if(!ok2) return;
+
+    state.quickMemos = [];
+    markDirty(); saveState();
+    // UI更新
+    const box=safeEl("qmSearch"); if(box) box.value="";
+    qmUpdateVisibility();
+    qmRender();
+    showToast("全メモを削除しました");
+    qmMaintClose();
+  }
+
 
   function qmSave(){
     const title=(safeEl("qmTitle")?.value || "").trim();
@@ -1730,6 +1747,7 @@ function init(){
 
 
 })();
+
 </script>
 
 

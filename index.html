@@ -1,7 +1,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1" name="viewport">
-<title>配達ドリルトラッカー v13.1</title>
+<title>デリザルト | Delivery Result Tracker</title>
 <style>
 :root{
   --bg:#050816;--card:#141a2b;--text:#f5f5f5;--muted:#9ca3af;
@@ -18,6 +18,9 @@ body{
 }
 h1{font-size:20px;margin:0 0 4px}
 .sub{font-size:11px;color:var(--muted);margin:0 0 8px}
+.appTitle{text-align:center;margin:6px 0 10px;font-weight:950;letter-spacing:.02em}
+.appTitle .jp{font-size:22px;line-height:1.12}
+.appTitle .en{font-size:12px;color:var(--muted);font-weight:850;margin-top:4px;letter-spacing:.08em}
 .card{
   background:linear-gradient(135deg,rgba(20,26,43,.95),rgba(9,12,24,.98));
   border-radius:14px;padding:10px;margin-bottom:10px;
@@ -291,10 +294,7 @@ button:active{transform:translateY(1px)}
 </style>
 </head>
 <body>
-<h1>配達ドリルトラッカー</h1>
-<div class="sub">午前4時で日付が切り替わる（Uberの締めに合わせる）。金額・時間・件数は手打ち。</div>
-
-
+<div class="appTitle"><div class="jp">デリザルト</div><div class="en">Delivery Result Tracker</div></div>
 <div class="card sparkle" id="mainStatsCard">
   <div class="top-row">
     <div class="label">総売上（クエスト込み）</div>
@@ -428,7 +428,7 @@ button:active{transform:translateY(1px)}
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v13.1</div>
+    <div class="footerVer" id="footerVer">v13.3</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -461,7 +461,7 @@ button:active{transform:translateY(1px)}
 (() => {
   "use strict";
 
-  const APP_VERSION = "v13.1";
+  const APP_VERSION = "v13.3";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);

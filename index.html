@@ -291,6 +291,15 @@ button:active{transform:translateY(1px)}
 .dcKey{font-size:12px;color:rgba(156,163,175,.95);font-weight:850;}
 .dcVal{font-size:14px;font-weight:950;color:rgba(226,232,240,.95);}
 
+
+/* quick memo */
+#quickMemoCard .subtitle{ color:#666; font-size:12px; }
+.qm-item{ padding:10px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; margin-top:8px; cursor:pointer; }
+.qm-top{ display:flex; gap:10px; align-items:baseline; }
+.qm-title{ font-weight:700; font-size:14px; flex:1; }
+.qm-meta{ font-size:11px; color:#666; white-space:nowrap; }
+.qm-snippet{ margin-top:6px; font-size:12px; color:#333; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+mark{ padding:0 2px; border-radius:3px; }
 </style>
 </head>
 <body>
@@ -390,6 +399,55 @@ button:active{transform:translateY(1px)}
 <div class="calList" id="calendarList"></div>
 </div>
 </div>
+
+<div class="card" id="quickMemoCard">
+  <div class="center-title" style="font-size:16px;">メモ（端末内のみ）</div>
+  <div class="subtitle" style="text-align:center; margin-top:2px;">※共有・送信なし / ショートカット検索連携OK</div>
+
+  <div class="row" style="margin-top:8px;">
+    <div style="flex:1;">
+      <div class="label">検索（部分一致）</div>
+      <input type="text" id="qmSearch" placeholder="ユーザー名 / 建物名 / 何でも">
+    </div>
+    <div style="width:110px;">
+      <div class="label">&nbsp;</div>
+      <button class="btn-goal" id="btnQmAdd" style="width:100%;">＋追加</button>
+    </div>
+  </div>
+
+  <div class="btn-row" style="margin-top:8px;">
+    <button class="btn-muted" id="btnQmExport">エクスポート</button>
+    <button class="btn-muted" id="btnQmImport">インポート</button>
+    <input type="file" id="qmImportFile" accept="application/json" style="display:none;">
+  </div>
+
+  <div class="label" style="margin-top:10px;">一覧（最新順）</div>
+  <div id="qmList" class="list"><div class="subtitle" style="text-align:center; padding:10px;">（メモなし）</div></div>
+</div>
+
+<!-- Quick memo modal -->
+<div id="qmOverlay" class="dcOverlay" aria-hidden="true" style="display:none;">
+  <div class="dcToast" style="max-width:640px;">
+    <div class="dcTitle" id="qmModalTitle">メモ</div>
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:1;">
+        <div class="label">一言（任意）</div>
+        <input type="text" id="qmTitle" placeholder="例：⚠️ 現金床置き">
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <div class="label">本文（スクショ丸コピOK）</div>
+      <textarea id="qmBody" rows="8" style="width:100%; resize:vertical;" placeholder="ここに貼る（改行OK）"></textarea>
+    </div>
+
+    <div class="btn-row" style="margin-top:10px;">
+      <button class="btn-muted" id="btnQmCancel">閉じる</button>
+      <button class="btn-danger" id="btnQmDelete" style="display:none;">削除</button>
+      <button class="btn-goal" id="btnQmSave">保存</button>
+    </div>
+    <div class="subtitle" id="qmHint" style="text-align:center; margin-top:6px;">データは端末内にのみ保存されます</div>
+  </div>
+</div>
 <div class="card">
 <div class="center-title" style="font-size:16px;">クエスト &amp; 今日のメモ &amp; 現金チップ</div>
 <div class="row" style="margin-top:6px;">
@@ -428,7 +486,7 @@ button:active{transform:translateY(1px)}
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v13.3</div>
+    <div class="footerVer" id="footerVer">v13.4</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -461,7 +519,7 @@ button:active{transform:translateY(1px)}
 (() => {
   "use strict";
 
-  const APP_VERSION = "v13.3";
+  const APP_VERSION = "v13.4";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -496,6 +554,7 @@ const safeEl = (id) => {
     onlineByDay:{}, // {dayKey: ms}
 
     memos:{}, // {dayKey: text}
+    quickMemos:[], // [{id,title,body,createdAt,updatedAt}]
     calendarOpen:false
   };
 
@@ -1283,9 +1342,240 @@ function openRunEditModal(runId){
         saveState();
       });
     }
+
+    // quick memos
+    safeEl("btnQmAdd")?.addEventListener("click", ()=>{ qmEditingId=null; qmOpen(null); });
+    safeEl("qmSearch")?.addEventListener("input", qmRender);
+    safeEl("btnQmCancel")?.addEventListener("click", qmClose);
+    safeEl("btnQmSave")?.addEventListener("click", qmSave);
+    safeEl("btnQmDelete")?.addEventListener("click", qmDelete);
+    safeEl("btnQmExport")?.addEventListener("click", qmExport);
+    safeEl("btnQmImport")?.addEventListener("click", ()=> safeEl("qmImportFile")?.click());
+    safeEl("qmImportFile")?.addEventListener("change", (e)=>{
+      const f = e.target && e.target.files ? e.target.files[0] : null;
+      if(f) qmImportFromFile(f);
+      e.target.value = "";
+    });
+    safeEl("qmOverlay")?.addEventListener("click", (e)=>{
+      if(e.target && e.target.id==="qmOverlay") qmClose();
+    });
+
   }
 
-  function init(){
+  
+  // ===== Quick Memos (端末内メモ) =====
+  let qmEditingId = null;
+
+  function qmEnsureArray(){
+    if(!state.quickMemos || !Array.isArray(state.quickMemos)) state.quickMemos = [];
+    return state.quickMemos;
+  }
+  function qmNow(){ return Date.now(); }
+  function qmFmt(ts){
+    try{
+      const d=new Date(ts);
+      const y=d.getFullYear();
+      const m=String(d.getMonth()+1).padStart(2,"0");
+      const day=String(d.getDate()).padStart(2,"0");
+      const hh=String(d.getHours()).padStart(2,"0");
+      const mm=String(d.getMinutes()).padStart(2,"0");
+      return `${y}/${m}/${day} ${hh}:${mm}`;
+    }catch(e){ return ""; }
+  }
+  function qmEscape(s){
+    return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function qmEscRe(s){ return String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+  function qmHighlight(text, q){
+    const t=String(text||"");
+    const qq=String(q||"").trim();
+    if(!qq) return qmEscape(t);
+    try{
+      const re=new RegExp(qmEscRe(qq),"gi");
+      return qmEscape(t).replace(re, (m)=>`<mark>${qmEscape(m)}</mark>`);
+    }catch(e){
+      return qmEscape(t);
+    }
+  }
+  function qmSnippet(body){
+    const s=String(body||"").replace(/\s+/g," ").trim();
+    return s;
+  }
+
+  function qmRender(){
+    const list=safeEl("qmList");
+    if(!list) return;
+    const q=(safeEl("qmSearch")?.value || "").trim();
+    const arr=qmEnsureArray().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    const filtered = q ? arr.filter(it=>{
+      const hay = (it.title||"") + "\n" + (it.body||"");
+      return hay.includes(q);
+    }) : arr;
+
+    if(!filtered.length){
+      list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">（メモなし）</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(it=>{
+      const title = it.title ? qmHighlight(it.title, q) : `<span style="color:#666;">（一言なし）</span>`;
+      const snippet = qmHighlight(qmSnippet(it.body), q);
+      const meta = qmFmt(it.updatedAt||it.createdAt||0);
+      return `
+        <div class="qm-item" data-qmid="${qmEscape(it.id)}">
+          <div class="qm-top">
+            <div class="qm-title">${title}</div>
+            <div class="qm-meta">${qmEscape(meta)}</div>
+          </div>
+          <div class="qm-snippet">${snippet}</div>
+        </div>
+      `;
+    }).join("");
+
+    // bind item clicks
+    list.querySelectorAll(".qm-item").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const id=el.getAttribute("data-qmid");
+        qmOpen(id);
+      });
+    });
+  }
+
+  function qmOpen(id){
+    const ov=safeEl("qmOverlay");
+    if(!ov) return;
+    const arr=qmEnsureArray();
+    const it = arr.find(x=>x.id===id) || null;
+    qmEditingId = it ? it.id : null;
+
+    const titleBox=safeEl("qmTitle");
+    const bodyBox=safeEl("qmBody");
+    const delBtn=safeEl("btnQmDelete");
+    const modalTitle=safeEl("qmModalTitle");
+
+    if(titleBox) titleBox.value = it ? (it.title||"") : "";
+    if(bodyBox) bodyBox.value = it ? (it.body||"") : "";
+    if(delBtn) delBtn.style.display = it ? "inline-block" : "none";
+    if(modalTitle) modalTitle.textContent = it ? "メモ編集" : "メモ追加";
+
+    ov.style.display="flex";
+    ov.setAttribute("aria-hidden","false");
+  }
+
+  function qmClose(){
+    const ov=safeEl("qmOverlay");
+    if(!ov) return;
+    ov.style.display="none";
+    ov.setAttribute("aria-hidden","true");
+    qmEditingId = null;
+  }
+
+  function qmSave(){
+    const title=(safeEl("qmTitle")?.value || "").trim();
+    const body=(safeEl("qmBody")?.value || "").trim();
+    if(!body && !title){
+      showToast("空なので保存しません");
+      return;
+    }
+    const arr=qmEnsureArray();
+    const now=qmNow();
+    if(qmEditingId){
+      const it=arr.find(x=>x.id===qmEditingId);
+      if(it){
+        it.title=title;
+        it.body=body;
+        it.updatedAt=now;
+      }
+      showToast("保存しました");
+    }else{
+      const id = "qm_" + now + "_" + Math.random().toString(16).slice(2);
+      arr.push({id, title, body, createdAt: now, updatedAt: now});
+      showToast("追加しました");
+    }
+    markDirty();
+    saveState(true);
+    qmRender();
+    qmClose();
+  }
+
+  function qmDelete(){
+    if(!qmEditingId) return;
+    const arr=qmEnsureArray();
+    const idx=arr.findIndex(x=>x.id===qmEditingId);
+    if(idx>=0) arr.splice(idx,1);
+    markDirty();
+    saveState(true);
+    showToast("削除しました");
+    qmRender();
+    qmClose();
+  }
+
+  function qmExport(){
+    const payload = {
+      type: "delizult_backup",
+      version: APP_VERSION,
+      exportedAt: new Date().toISOString(),
+      state
+    };
+    const blob=new Blob([JSON.stringify(payload,null,2)], {type:"application/json"});
+    const a=document.createElement("a");
+    const ymd = todayKey().replace(/-/g,"");
+    a.download = `delizult_backup_${ymd}.json`;
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    showToast("バックアップを書き出しました");
+  }
+
+  function qmImportFromFile(file){
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const obj=JSON.parse(String(reader.result||""));
+        const st = obj && obj.state ? obj.state : null;
+        if(!st || typeof st!=="object"){
+          showToast("インポート失敗（形式が違う）");
+          return;
+        }
+        // merge onto defaultState to avoid missing keys
+        const base = structuredClonePoly(defaultState);
+        const merged = Object.assign(base, st);
+        merged.goal = Object.assign(structuredClonePoly(defaultState.goal), st.goal||{});
+        merged.online = Object.assign(structuredClonePoly(defaultState.online), st.online||{});
+        if(!Array.isArray(merged.quickMemos)) merged.quickMemos = [];
+        state = merged;
+        markDirty();
+        saveState(true);
+        showToast("インポート完了");
+        updateUI();
+        qmRender();
+      }catch(e){
+        showToast("インポート失敗（JSON読めない）");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function qmApplyQueryFromURL(){
+    try{
+      const url = new URL(window.location.href);
+      const q = url.searchParams.get("q");
+      if(q){
+        const box=safeEl("qmSearch");
+        if(box) box.value = q;
+        qmRender();
+        // qをURLから消す（履歴対策）
+        url.searchParams.delete("q");
+        history.replaceState(null, "", url.toString());
+        // メモカードへスクロール
+        const card=safeEl("quickMemoCard");
+        if(card && card.scrollIntoView) card.scrollIntoView({behavior:"smooth", block:"start"});
+      }
+    }catch(e){}
+  }
+
+function init(){
     // initialize day key
     state.online.lastKey = state.online.lastKey || todayKey();
     dayBoundaryResetIfNeeded();
@@ -1305,6 +1595,8 @@ function openRunEditModal(runId){
     bind();
     const fv=safeEl("footerVer"); if(fv) fv.textContent = APP_VERSION;
     updateUI();
+    qmRender();
+    qmApplyQueryFromURL();
     setInterval(updateUI, 1000);
   }
 

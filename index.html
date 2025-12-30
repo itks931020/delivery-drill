@@ -1,7 +1,7 @@
 <html lang="ja"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1" name="viewport">
-<title>配達ドリルトラッカー v13.0</title>
+<title>配達ドリルトラッカー v13.1</title>
 <style>
 :root{
   --bg:#050816;--card:#141a2b;--text:#f5f5f5;--muted:#9ca3af;
@@ -45,10 +45,10 @@ h1{font-size:20px;margin:0 0 4px}
 .dash{
   background:rgba(2,6,23,.18);
   border:1px solid var(--b1);
-  border-radius:12px;padding:10px;
+  border-radius:12px;padding:8px;
 }
 .label{font-size:11px;color:var(--muted)}
-.dash-value{font-size:22px;font-weight:800;margin-top:2px}
+.dash-value{font-size:22px;font-weight:800;margin-top:1px}
 
 input[type="text"],textarea,select{
   width:100%;border-radius:12px;border:1px solid var(--b2);
@@ -131,7 +131,7 @@ button:active{transform:translateY(1px)}
 /* modal toast (must ack) */
 .modalOverlay{
   position:fixed;inset:0;background:rgba(0,0,0,.55);
-  display:none;align-items:flex-end;justify-content:center;
+  display:none;align-items:center;justify-content:center;
   padding:12px;z-index:9999;
 }
 .modalOverlay.show{display:flex;}
@@ -428,7 +428,7 @@ button:active{transform:translateY(1px)}
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v13.0</div>
+    <div class="footerVer" id="footerVer">v13.1</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -461,7 +461,7 @@ button:active{transform:translateY(1px)}
 (() => {
   "use strict";
 
-  const APP_VERSION = "v13.0";
+  const APP_VERSION = "v13.1";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -482,10 +482,19 @@ const safeEl = (id) => {
   }
   function todayKey(){return businessDayKey(Date.now());}
 
+  function fmtDayKey(dayKey){
+    const [y,m,d]=dayKey.split("-").map(Number);
+    const mm=String(m).padStart(2,"0");
+    const dd=String(d).padStart(2,"0");
+    return `${y} ${mm}/${dd}`;
+  }
+
   const defaultState={
     runsLog:[], quest:[], cashTip:[],
     goal:{runs:0,amount:0},
     online:{isOn:false,startAt:0,accumulatedMs:0,lastKey:""},
+    onlineByDay:{}, // {dayKey: ms}
+
     memos:{}, // {dayKey: text}
     calendarOpen:false
   };
@@ -601,10 +610,17 @@ function closeDeliveryCompletePopup(){
   }
   function dayBoundaryResetIfNeeded(){
     const key=todayKey();
-    if(state.online.lastKey !== key){
+    const prevKey = state.online.lastKey || key;
+    if(prevKey !== key){
+      // commit previous day's online time before reset
+      if(!state.onlineByDay) state.onlineByDay = {};
+      const o=state.online||{};
+      let rawMs = (o.accumulatedMs||0);
+      if(o.isOn && o.startAt) rawMs += (Date.now()-o.startAt);
+      state.onlineByDay[prevKey] = Math.max(0, rawMs);
+
       // reset per business day
       state.online = {isOn:false,startAt:0,accumulatedMs:0,lastKey:key};
-      // ensure memo box loads right day
     }
   }
 
@@ -619,6 +635,12 @@ function closeDeliveryCompletePopup(){
     const workMinutes=runs.reduce((a,r)=>a+(r.minutes||0),0);
     const cashSum=runs.reduce((a,r)=>a+(r.cashCollected||0),0);
     return {sales,count,workMs:workMinutes*60000,questSum,cashSum};
+  }
+
+  function onlineMsForDay(dayKey){
+    if(dayKey===todayKey()) return currentOnlineMs();
+    if(state.onlineByDay && typeof state.onlineByDay[dayKey]==="number") return state.onlineByDay[dayKey];
+    return 0;
   }
 
   function currentOnlineMs(){
@@ -843,11 +865,13 @@ function openRunEditModal(runId){
     dayBoundaryResetIfNeeded();
     const o=state.online;
     if(on){
-      if(!o.isOn){ o.isOn=true; o.startAt=Date.now(); }
+      if(!o.isOn){ o.isOn=true; o.startAt=Date.now(); o.lastKey=todayKey(); }
     }else{
       if(o.isOn){
         o.accumulatedMs=(o.accumulatedMs||0)+(Date.now()-(o.startAt||Date.now()));
         o.startAt=0; o.isOn=false;
+        if(!state.onlineByDay) state.onlineByDay = {};
+        state.onlineByDay[todayKey()] = Math.max(0, o.accumulatedMs||0);
       }
     }
     // ui classes
@@ -901,7 +925,60 @@ function openRunEditModal(runId){
     });
   }
 
-    function openTimeInputModal(){
+    function openTimeInputModal(dayKey=null){
+
+  function openDayEditor(dayKey){
+    showModal({
+      title:`${fmtDayKey(dayKey)}（編集）`,
+      msg:"修正したい項目を選んでね。",
+      buttons:[
+        {text:"オンライン時間を編集", type:"primary", onClick:()=>openTimeInputModal(dayKey)},
+        {text:"メモを編集", type:"muted", onClick:()=>openMemoEditModal(dayKey)},
+        {text:"閉じる", type:"muted", onClick:()=>closeModal()}
+      ]
+    });
+  }
+
+  function openMemoEditModal(dayKey){
+    const ov = safeEl("modalOverlay");
+    const ttl = safeEl("modalTitle");
+    const mm  = safeEl("modalMsg");
+    const acts= safeEl("modalActions");
+    if(!ov||!ttl||!mm||!acts) return;
+
+    ttl.textContent = `${fmtDayKey(dayKey)} メモ`;
+    const cur = (state.memos && state.memos[dayKey]) ? state.memos[dayKey] : "";
+
+    mm.innerHTML = `
+      <div style="margin-top:8px;">
+        <textarea id="tmpMemoDay" rows="5" style="width:100%;box-sizing:border-box;border-radius:12px;border:1px solid rgba(148,163,184,.25);padding:10px;font-size:16px;background:rgba(2,6,23,.18);color:rgba(226,232,240,.95);">${escapeHtml(cur)}</textarea>
+        <div class="sub" style="margin-top:6px;">※空にすると削除</div>
+      </div>
+    `;
+
+    acts.innerHTML="";
+    const btnCancel=document.createElement("button");
+    btnCancel.textContent="キャンセル";
+    btnCancel.className="btn-muted";
+    btnCancel.addEventListener("click", closeModal);
+
+    const btnSave=document.createElement("button");
+    btnSave.textContent="保存";
+    btnSave.addEventListener("click",()=>{
+      const v = (safeEl("tmpMemoDay")?.value||"").trim();
+      if(!state.memos) state.memos = {};
+      if(v) state.memos[dayKey]=v; else delete state.memos[dayKey];
+      saveState(); updateUI();
+      closeModal();
+    });
+
+    acts.appendChild(btnCancel);
+    acts.appendChild(btnSave);
+
+    ov.classList.add("show");
+    ov.setAttribute("aria-hidden","false");
+  }
+
   // Online duration input via dropdowns (HH + MM).
   const ov = safeEl("modalOverlay");
   const ttl = safeEl("modalTitle");
@@ -909,10 +986,11 @@ function openRunEditModal(runId){
   const acts= safeEl("modalActions");
   if(!ov||!ttl||!mm||!acts) return;
 
-  ttl.textContent="オンライン時間を入力";
+  ttl.textContent = dayKey ? `${fmtDayKey(dayKey)} オンライン時間` : "オンライン時間を入力";
   dayBoundaryResetIfNeeded();
 
-  const curMin = Math.floor((currentOnlineMs()||0)/60000);
+  const baseMs = (dayKey && dayKey!==todayKey()) ? onlineMsForDay(dayKey) : currentOnlineMs();
+  const curMin = Math.floor((baseMs||0)/60000);
   const curH = Math.min(24, Math.floor(curMin/60));
   const curM = Math.min(59, curMin%60);
 
@@ -960,10 +1038,17 @@ function openRunEditModal(runId){
 
     const durMs = totalMin * 60000;
 
-    state.online.isOn = false;
-    state.online.startAt = 0;
-    state.online.accumulatedMs = durMs;
-    state.online.lastKey = todayKey();
+    if(dayKey && dayKey!==todayKey()){
+      if(!state.onlineByDay) state.onlineByDay = {};
+      state.onlineByDay[dayKey] = durMs;
+    }else{
+      state.online.isOn = false;
+      state.online.startAt = 0;
+      state.online.accumulatedMs = durMs;
+      state.online.lastKey = todayKey();
+      if(!state.onlineByDay) state.onlineByDay = {};
+      state.onlineByDay[todayKey()] = durMs;
+    }
 
     ov.classList.remove("show");
     ov.setAttribute("aria-hidden","true");
@@ -998,27 +1083,27 @@ function openRunEditModal(runId){
     }
     box.innerHTML=days.map(k=>{
       const t=totalsForDay(k);
-      const onlineH = (k===todayKey()) ? (currentOnlineMs()/3600000) : 0;
+      const onlineH = (onlineMsForDay(k)/3600000);
       const onlineW = onlineH>0 ? Math.floor(t.sales/onlineH) : 0;
       const workH = (t.workMs||0)/3600000;
       const workW = workH>0 ? Math.floor(t.sales/workH) : 0;
       const memo = (state.memos && state.memos[k]) ? state.memos[k] : "";
       return `<div class="calDay" data-day="${k}">
         <div class="calHead">
-          <div class="calDate">${k}</div>
+          <div class="calDate">${fmtDayKey(k)}</div>
           <div class="calMetrics">
-            <span>売上: ¥${fmtYen(t.sales)}</span>
-            <span>時間: ${fmtHHMM(t.workMs||0)}</span>
-            <span>件数: ${fmtYen(t.count)}回</span>
-            <span>オンライン: ¥${fmtYen(onlineW)}/h</span>
-            <span>実働: ¥${fmtYen(workW)}/h</span>
+            <span>総売上: ¥${fmtYen(t.sales)}</span>
+            <span>配達件数: ${fmtYen(t.count)}回</span>
+            <span>オンライン時給換算: ¥${fmtYen(onlineW)}/h</span>
             <span>現金: ¥${fmtYen(t.cashSum)}</span>
-            <span>クエスト: ¥${fmtYen(t.questSum)}</span>
           </div>
         </div>
         <div class="calMemo">${memo ? "メモ："+escapeHtml(memo) : "メモ：（なし）"}</div>
         <div class="calDetails">
-          <button type="button" class="calBtn" data-openruns="1">配達ログ（さらに開く）</button>
+          <div class="calBtnRow" style="display:flex;gap:8px;">
+            <button type="button" class="calBtn" data-editday="1" style="flex:1;background:rgba(2,6,23,.18);border:1px solid rgba(148,163,184,.22);">編集</button>
+            <button type="button" class="calBtn" data-openruns="1" style="flex:1;">配達ログ（さらに開く）</button>
+          </div>
           <div class="calRuns"></div>
         </div>
       </div>`;
@@ -1027,10 +1112,13 @@ function openRunEditModal(runId){
     box.querySelectorAll(".calDay").forEach(dayEl=>{
       const head=dayEl.querySelector(".calHead");
       const btn=dayEl.querySelector('[data-openruns="1"]');
+      const editBtn=dayEl.querySelector('[data-editday="1"]');
       const runsBox=dayEl.querySelector(".calRuns");
       const dayKey=dayEl.getAttribute("data-day");
 
       head.addEventListener("click",()=>dayEl.classList.toggle("open"));
+
+      editBtn?.addEventListener("click",(ev)=>{ev.stopPropagation(); openDayEditor(dayKey);});
 
       btn.addEventListener("click",(ev)=>{
         ev.stopPropagation();

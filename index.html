@@ -295,6 +295,9 @@ button:active{transform:translateY(1px)}
 /* quick memo */
 #quickMemoCard .subtitle{ color:#666; font-size:12px; }
 .qm-item{ padding:10px; border:1px solid #e5e7eb; border-radius:10px; background:#fff; margin-top:8px; cursor:pointer; }
+.qm-item.qm-hit{ border-color:rgba(250,204,21,.85); box-shadow:0 0 0 2px rgba(250,204,21,.18); background:linear-gradient(135deg,rgba(250,204,21,.12),#fff); }
+.qm-item mark{ background:rgba(250,204,21,.45); padding:0 2px; border-radius:4px; }
+
 .qm-top{ display:flex; gap:10px; align-items:baseline; }
 .qm-title{ font-weight:700; font-size:14px; flex:1; }
 .qm-meta{ font-size:11px; color:#666; white-space:nowrap; }
@@ -394,7 +397,7 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card" id="calendarCard">
 <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
 <button class="calBtn" id="calendarToggle" type="button">表示する</button>
-<div id="calendarWrap" style="display: none;">
+<div id="calendarWrap">
 <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
 <div class="calList" id="calendarList"></div>
 </div>
@@ -403,6 +406,7 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card" id="quickMemoCard">
   <div class="center-title" style="font-size:16px;">メモ（端末内のみ）</div>
   <div class="subtitle" style="text-align:center; margin-top:2px;">※共有・送信なし / ショートカット検索連携OK</div>
+  <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;"></div>
 
   <div class="row" style="margin-top:8px;">
     <div style="flex:1;">
@@ -421,8 +425,10 @@ mark{ padding:0 2px; border-radius:3px; }
     <input type="file" id="qmImportFile" accept="application/json" style="display:none;">
   </div>
 
-  <div class="label" style="margin-top:10px;">一覧（最新順）</div>
-  <div id="qmList" class="list"><div class="subtitle" style="text-align:center; padding:10px;">（メモなし）</div></div>
+  <div id="qmResultsWrap" style="display:none; margin-top:10px;">
+    <div class="label" id="qmResultsLabel">検索結果</div>
+    <div id="qmList" class="list"></div>
+  </div>
 </div>
 
 <!-- Quick memo modal -->
@@ -470,8 +476,8 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card">
 <div class="center-title" style="font-size:16px;">オンライン</div>
 <div class="btn-row">
-<button class="" id="btnOffline" type="button">オフライン</button>
-<button id="btnOnline" type="button" class="btn-muted">オンライン</button>
+<button class="btn-muted" id="btnOffline" type="button">オフライン</button>
+<button id="btnOnline" type="button">オンライン</button>
 </div>
 <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
 </div>
@@ -486,7 +492,7 @@ mark{ padding:0 2px; border-radius:3px; }
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v13.4</div>
+    <div class="footerVer" id="footerVer">v13.7</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -519,7 +525,7 @@ mark{ padding:0 2px; border-radius:3px; }
 (() => {
   "use strict";
 
-  const APP_VERSION = "v13.4";
+  const APP_VERSION = "v13.5";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -1346,6 +1352,8 @@ function openRunEditModal(runId){
     // quick memos
     safeEl("btnQmAdd")?.addEventListener("click", ()=>{ qmEditingId=null; qmOpen(null); });
     safeEl("qmSearch")?.addEventListener("input", qmRender);
+    safeEl("qmSearch")?.addEventListener("focus", qmRender);
+    safeEl("qmSearch")?.addEventListener("blur", ()=>{ qmUpdateVisibility(); });
     safeEl("btnQmCancel")?.addEventListener("click", qmClose);
     safeEl("btnQmSave")?.addEventListener("click", qmSave);
     safeEl("btnQmDelete")?.addEventListener("click", qmDelete);
@@ -1359,6 +1367,8 @@ function openRunEditModal(runId){
     safeEl("qmOverlay")?.addEventListener("click", (e)=>{
       if(e.target && e.target.id==="qmOverlay") qmClose();
     });
+    // initial state
+    qmUpdateVisibility();
 
   }
 
@@ -1402,22 +1412,129 @@ function openRunEditModal(runId){
     return s;
   }
 
-  function qmRender(){
-    const list=safeEl("qmList");
-    if(!list) return;
-    const q=(safeEl("qmSearch")?.value || "").trim();
-    const arr=qmEnsureArray().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-    const filtered = q ? arr.filter(it=>{
-      const hay = (it.title||"") + "\n" + (it.body||"");
-      return hay.includes(q);
-    }) : arr;
+  
+  function qmUpdateVisibility(){
+    const wrap=safeEl("qmResultsWrap");
+    const box=safeEl("qmSearch");
+    const cnt=safeEl("qmCount");
+    // count
+    try{
+      const total = qmEnsureArray().length;
+      if(cnt) cnt.textContent = `登録件数：${total}件`;
+    }catch(e){}
+    if(!wrap || !box) return;
 
-    if(!filtered.length){
-      list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">（メモなし）</div>`;
+    const q=(box.value||"").trim();
+    const focused = (document.activeElement===box);
+
+    // 未入力＆非フォーカス → 件数だけ
+    if(!q && !focused){
+      wrap.style.display="none";
+      if(cnt) cnt.style.display="block";
       return;
     }
 
-    list.innerHTML = filtered.map(it=>{
+    // フォーカス中 or クエリあり → 結果枠を出す
+    wrap.style.display="block";
+    if(cnt) cnt.style.display="none";
+
+    const lab=safeEl("qmResultsLabel");
+    if(lab) lab.textContent = q ? `検索結果（${q}）` : "検索ワードを入力";
+  }
+
+  function qmRender(){
+    qmUpdateVisibility();
+    const wrap=safeEl("qmResultsWrap");
+    // 非表示中はDOM更新しない（軽量化）
+    if(wrap && wrap.style.display==="none") return;
+
+    const list=safeEl("qmList");
+    if(!list) return;
+
+    const box=safeEl("qmSearch");
+    const q=(box?.value || "").trim();
+
+    // 未入力時は一覧を出さない（件数表示に戻す）
+    if(!q){
+      list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">検索ワードを入力してください</div>`;
+      return;
+    }
+
+    const qLower = q.toLowerCase();
+    const arr=qmEnsureArray().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    const filtered = arr.filter(it=>{
+      const hay = (it.title||"") + "
+" + (it.body||"");
+      return hay.toLowerCase().includes(qLower);
+    });
+
+    // 返しすぎると重いので上限
+    const LIMIT = 120;
+    const limited = filtered.slice(0, LIMIT);
+
+    if(!limited.length){
+      list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">（ヒットなし）</div>`;
+      return;
+    }
+
+    list.innerHTML = limited.map(it=>{
+      const title = it.title ? qmHighlight(it.title, q) : `<span style="color:#666;">（一言なし）</span>`;
+      const snippet = qmHighlight(qmSnippet(it.body), q);
+      const meta = qmFmt(it.updatedAt||it.createdAt||0);
+      return `
+        <div class="qm-item qm-hit" data-qmid="${qmEscape(it.id)}">
+          <div class="qm-top">
+            <div class="qm-title">${title}</div>
+            <div class="qm-meta">${qmEscape(meta)}</div>
+          </div>
+          <div class="qm-snippet">${snippet}</div>
+        </div>
+      `;
+    }).join("");
+
+    // bind item clicks
+    list.querySelectorAll(".qm-item").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const id=el.getAttribute("data-qmid");
+        qmOpen(id);
+      });
+    });
+  }
+
+  function qmOpen{
+    qmUpdateVisibility();
+    const wrap=safeEl("qmResultsWrap");
+    // 非表示中はDOM更新しない（軽量化）
+    if(wrap && wrap.style.display==="none") return;
+
+    const list=safeEl("qmList");
+    if(!list) return;
+
+    const box=safeEl("qmSearch");
+    const q=(box?.value || "").trim();
+
+    // 未入力時は一覧を出さない（200件でも画面が埋まらない）
+    if(!q){
+      list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">検索ワードを入力してください</div>`;
+      return;
+    }
+
+    const arr=qmEnsureArray().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    const filtered = arr.filter(it=>{
+      const hay = (it.title||"") + "\n" + (it.body||"");
+      return hay.includes(q);
+    });
+
+    // 返しすぎると重いので上限
+    const LIMIT = 120;
+    const limited = filtered.slice(0, LIMIT);
+
+    if(!limited.length){
+      list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">（ヒットなし）</div>`;
+      return;
+    }
+
+    list.innerHTML = limited.map(it=>{
       const title = it.title ? qmHighlight(it.title, q) : `<span style="color:#666;">（一言なし）</span>`;
       const snippet = qmHighlight(qmSnippet(it.body), q);
       const meta = qmFmt(it.updatedAt||it.createdAt||0);
@@ -1601,6 +1718,16 @@ function init(){
   }
 
   document.addEventListener("DOMContentLoaded", init);
+
+  // When Safari restores from back/forward cache or reuses an existing tab,
+  // the page may not fully reload. Re-apply query on these lifecycle events.
+  window.addEventListener("pageshow", () => { qmApplyQueryFromURL(); });
+  window.addEventListener("popstate", () => { qmApplyQueryFromURL(); });
+  window.addEventListener("hashchange", () => { qmApplyQueryFromURL(); });
+  document.addEventListener("visibilitychange", () => {
+    if(!document.hidden) qmApplyQueryFromURL();
+  });
+
 
 })();
 </script>

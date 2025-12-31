@@ -305,6 +305,17 @@ button:active{transform:translateY(1px)}
 .qm-meta{ font-size:11px; color:#666; white-space:nowrap; }
 .qm-snippet{ margin-top:6px; font-size:12px; color:#333; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 mark{ padding:0 2px; border-radius:3px; }
+
+/* QuickMemo 중요度フラグ */
+.qm-flagbar{ display:flex; gap:8px; margin-top:10px; justify-content:center; flex-wrap:wrap; }
+.qm-flagbtn{ padding:8px 10px; border-radius:10px; border:1px solid #ddd; background:#fff; font-size:13px; }
+.qm-flagbtn.active{ border-color:#222; box-shadow:0 0 0 2px rgba(0,0,0,0.08); }
+.qm-item.flag-yellow{ border-left:6px solid #f1c40f; }
+.qm-item.flag-red{ border-left:6px solid #e74c3c; }
+.qm-flagbadge{ display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; margin-left:6px; border:1px solid #ddd; }
+.qm-flagbadge.yellow{ border-color:#f1c40f; }
+.qm-flagbadge.red{ border-color:#e74c3c; }
+
 </style>
 </head>
 <body>
@@ -442,6 +453,14 @@ mark{ padding:0 2px; border-radius:3px; }
       <div style="flex:1;">
         <div class="label">一言（任意）</div>
         <input type="text" id="qmTitle" placeholder="例：⚠️ 現金床置き">
+
+    <div class="qm-flagbar" aria-label="重要度フラグ">
+      <button type="button" class="qm-flagbtn" id="btnFlagNone">フラグなし</button>
+      <button type="button" class="qm-flagbtn" id="btnFlagYellow">⚠️ 注意（黄）</button>
+      <button type="button" class="qm-flagbtn" id="btnFlagRed">⛔ 危険（赤）</button>
+      <input type="hidden" id="qmFlag" value="none">
+    </div>
+
       </div>
     </div>
     <div style="margin-top:10px;">
@@ -495,7 +514,7 @@ mark{ padding:0 2px; border-radius:3px; }
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v13.8</div>
+    <div class="footerVer" id="footerVer">v13.9</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -544,7 +563,7 @@ mark{ padding:0 2px; border-radius:3px; }
 (() => {
   "use strict";
 
-  const APP_VERSION = "v13.8";
+  const APP_VERSION = "v13.9";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -1375,6 +1394,9 @@ function openRunEditModal(runId){
     safeEl("qmSearch")?.addEventListener("blur", ()=>{ qmUpdateVisibility(); });
     safeEl("btnQmCancel")?.addEventListener("click", qmClose);
     safeEl("btnQmSave")?.addEventListener("click", qmSave);
+    safeEl("btnFlagNone")?.addEventListener("click", ()=>qmSetFlag("none"));
+    safeEl("btnFlagYellow")?.addEventListener("click", ()=>qmSetFlag("yellow"));
+    safeEl("btnFlagRed")?.addEventListener("click", ()=>qmSetFlag("red"));
     safeEl("btnQmDelete")?.addEventListener("click", qmDelete);
     safeEl("btnQmExport")?.addEventListener("click", qmExport);
     safeEl("btnQmImport")?.addEventListener("click", ()=> safeEl("qmImportFile")?.click());
@@ -1422,8 +1444,27 @@ function openRunEditModal(runId){
   // ===== Quick Memos (端末内メモ) =====
   let qmEditingId = null;
 
+  function qmSetFlag(flag){
+    const f=(flag||"none");
+    const hid=safeEl("qmFlag"); if(hid) hid.value=f;
+    const bN=safeEl("btnFlagNone"), bY=safeEl("btnFlagYellow"), bR=safeEl("btnFlagRed");
+    [bN,bY,bR].forEach(b=>{ if(b) b.classList.remove("active"); });
+    if(f==="yellow" && bY) bY.classList.add("active");
+    else if(f==="red" && bR) bR.classList.add("active");
+    else if(bN) bN.classList.add("active");
+  }
+
+
   function qmEnsureArray(){
     if(!state.quickMemos || !Array.isArray(state.quickMemos)) state.quickMemos = [];
+    // migrate
+    try{
+      state.quickMemos.forEach(it=>{
+        if(!it) return;
+        if(!it.id) it.id = "qm_" + qmNow() + "_" + Math.random().toString(16).slice(2);
+        if(!("flag" in it)) it.flag = "none";
+      });
+    }catch(e){}
     return state.quickMemos;
   }
   function qmNow(){ return Date.now(); }
@@ -1522,13 +1563,20 @@ function openRunEditModal(runId){
     }
 
     list.innerHTML = limited.map(it=>{
-      const title = it.title ? qmHighlight(it.title, q) : `<span style="color:#666;">（一言なし）</span>`;
-      const snippet = qmHighlight(qmSnippet(it.body), q);
+      const title = it.title ? qmHighlight(it.title, q) : "（無題）";
+      const body = it.body || "";
+      const snippetRaw = body.length>220 ? (body.slice(0,220) + "…") : body;
+      const snippet = qmHighlight(snippetRaw, q);
       const meta = qmFmt(it.updatedAt||it.createdAt||0);
+
+      const f = (it.flag||"none");
+      const flagClass = (f==="yellow") ? "flag-yellow" : (f==="red") ? "flag-red" : "";
+      const badge = (f==="yellow") ? `<span class="qm-flagbadge yellow">黄</span>` : (f==="red") ? `<span class="qm-flagbadge red">赤</span>` : ``;
+
       return `
-        <div class="qm-item qm-hit" data-qmid="${qmEscape(it.id)}">
+        <div class="qm-item ${flagClass}" data-qmid="${qmEscape(it.id)}">
           <div class="qm-top">
-            <div class="qm-title">${title}</div>
+            <div class="qm-title">${title}${badge}</div>
             <div class="qm-meta">${qmEscape(meta)}</div>
           </div>
           <div class="qm-snippet">${snippet}</div>
@@ -1559,6 +1607,8 @@ function openRunEditModal(runId){
 
     if(titleBox) titleBox.value = it ? (it.title||"") : "";
     if(bodyBox) bodyBox.value = it ? (it.body||"") : "";
+    qmSetFlag(it ? (it.flag||"none") : "none");
+
     if(delBtn) delBtn.style.display = it ? "inline-block" : "none";
     if(modalTitle) modalTitle.textContent = it ? "メモ編集" : "メモ追加";
 
@@ -1607,6 +1657,7 @@ function openRunEditModal(runId){
   function qmSave(){
     const title=(safeEl("qmTitle")?.value || "").trim();
     const body=(safeEl("qmBody")?.value || "").trim();
+    const flag=(safeEl("qmFlag")?.value || "none").trim();
     if(!body && !title){
       showToast("空なので保存しません");
       return;
@@ -1618,12 +1669,13 @@ function openRunEditModal(runId){
       if(it){
         it.title=title;
         it.body=body;
+        it.flag=flag;
         it.updatedAt=now;
       }
       showToast("保存しました");
     }else{
       const id = "qm_" + now + "_" + Math.random().toString(16).slice(2);
-      arr.push({id, title, body, createdAt: now, updatedAt: now});
+      arr.push({id, title, body, flag, createdAt: now, updatedAt: now});
       showToast("追加しました");
     }
     markDirty();
@@ -1691,21 +1743,43 @@ function openRunEditModal(runId){
     reader.readAsText(file);
   }
 
-  function qmApplyQueryFromURL(){
+  function qmApplyQueryFromURL(opts){
+    const o=opts||{};
+    const triesMax = o.triesMax ?? 12;
+    const delayMs = o.delayMs ?? 60;
+
+    let q=null, url=null;
     try{
-      const url = new URL(window.location.href);
-      const q = url.searchParams.get("q");
-      if(q){
-        const box=safeEl("qmSearch");
-        if(box) box.value = q;
-        qmRender();
-        // qをURLから消す（履歴対策）
-        url.searchParams.delete("q");
-        history.replaceState(null, "", url.toString());
-        // メモカードへスクロール
-        const card=safeEl("quickMemoCard");
-        if(card && card.scrollIntoView) card.scrollIntoView({behavior:"smooth", block:"start"});
+      url = new URL(window.location.href);
+      q = url.searchParams.get("q");
+    }catch(e){ return; }
+    if(!q) return;
+
+    const attempt = (o.attempt ?? 0);
+
+    const box=safeEl("qmSearch");
+    // DOMがまだ準備できてない時は少し待って再トライ（Safari対策）
+    if(!box){
+      if(attempt < triesMax){
+        setTimeout(()=>qmApplyQueryFromURL({triesMax, delayMs, attempt: attempt+1}), delayMs);
       }
+      return;
+    }
+
+    // ここまで来たら確実に反映
+    box.value = q;
+    qmRender();
+
+    // qをURLから消す（履歴対策）
+    try{
+      url.searchParams.delete("q");
+      history.replaceState(null, "", url.toString());
+    }catch(e){}
+
+    // メモカードへスクロール
+    try{
+      const card=safeEl("quickMemoCard");
+      if(card && card.scrollIntoView) card.scrollIntoView({behavior:"smooth", block:"start"});
     }catch(e){}
   }
 
@@ -1731,6 +1805,7 @@ function init(){
     updateUI();
     qmRender();
     qmApplyQueryFromURL();
+    setTimeout(()=>qmApplyQueryFromURL(), 80);
     setInterval(updateUI, 1000);
   }
 
@@ -1738,11 +1813,11 @@ function init(){
 
   // When Safari restores from back/forward cache or reuses an existing tab,
   // the page may not fully reload. Re-apply query on these lifecycle events.
-  window.addEventListener("pageshow", () => { qmApplyQueryFromURL(); });
-  window.addEventListener("popstate", () => { qmApplyQueryFromURL(); });
-  window.addEventListener("hashchange", () => { qmApplyQueryFromURL(); });
+  window.addEventListener("pageshow", () => { qmApplyQueryFromURL(); setTimeout(()=>qmApplyQueryFromURL(), 80); });
+  window.addEventListener("popstate", () => { qmApplyQueryFromURL(); setTimeout(()=>qmApplyQueryFromURL(), 80); });
+  window.addEventListener("hashchange", () => { qmApplyQueryFromURL(); setTimeout(()=>qmApplyQueryFromURL(), 80); });
   document.addEventListener("visibilitychange", () => {
-    if(!document.hidden) qmApplyQueryFromURL();
+    if(!document.hidden){ qmApplyQueryFromURL(); setTimeout(()=>qmApplyQueryFromURL(), 80); }
   });
 
 

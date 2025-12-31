@@ -308,7 +308,7 @@ mark{ padding:0 2px; border-radius:3px; }
 
 /* QuickMemo 중요度フラグ */
 .qm-flagbar{ display:flex; gap:10px; margin-top:10px; justify-content:center; align-items:center; }
-.qm-flagopt{ display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:999px; border:1px solid #ddd; background:#fff; font-size:13px; user-select:none; }
+.qm-flagopt{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #ddd; border-radius:10px; background:#fff; font-size:13px; user-select:none; }
 .qm-flagopt input{ width:16px; height:16px; }
 .qm-flagopt.is-on{ border-color:#222; box-shadow:0 0 0 2px rgba(0,0,0,0.08); }
 .qm-item.flag-yellow{ border-left:6px solid #f1c40f; }
@@ -456,9 +456,10 @@ mark{ padding:0 2px; border-radius:3px; }
         <input type="text" id="qmTitle" placeholder="例：⚠️ 現金床置き">
 
     <div class="qm-flagbar" aria-label="重要度フラグ">
+      
       <label class="qm-flagopt"><input type="radio" name="qmFlagRadio" value="none" checked=""><span>マークなし</span></label>
-      <label class="qm-flagopt"><input type="radio" name="qmFlagRadio" value="yellow"><span>🟨注意</span></label>
-      <label class="qm-flagopt"><input type="radio" name="qmFlagRadio" value="red"><span>🟥危険</span></label>
+      <label class="qm-flagopt"><input type="radio" name="qmFlagRadio" value="yellow"><span style="font-size:18px; line-height:1;">🟨</span></label>
+      <label class="qm-flagopt"><input type="radio" name="qmFlagRadio" value="red"><span style="font-size:18px; line-height:1;">🟥</span></label>
       <input type="hidden" id="qmFlag" value="none">
     </div>
 

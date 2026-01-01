@@ -308,14 +308,52 @@ mark{ padding:0 2px; border-radius:3px; }
 
 /* QuickMemo 중요度フラグ */
 .qm-flagbar{ display:flex; gap:10px; margin-top:10px; justify-content:center; align-items:center; }
-.qm-flagopt{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #ddd; border-radius:10px; background:#fff; font-size:13px; user-select:none; }
-.qm-flagopt input{ width:16px; height:16px; }
-.qm-flagopt.is-on{ border-color:#222; box-shadow:0 0 0 2px rgba(0,0,0,0.08); }
+.qm-flagopt{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  height:38px;
+  min-width:104px;
+  padding:0 12px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:12px;
+  background:rgba(255,255,255,.06);
+  color:var(--text);
+  font-size:13px;
+  user-select:none;
+  -webkit-tap-highlight-color: transparent;
+}
+.qm-flagopt input{ width:16px; height:16px; accent-color: rgba(255,255,255,.9); }
+.qm-flagopt .qm-flagIcon{ width:18px; height:18px; border-radius:4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.qm-flagopt.is-on{ border-color: rgba(255,255,255,.35); box-shadow:0 0 0 2px rgba(59,130,246,.25); background:rgba(59,130,246,.10); }
+
+.qm-flagopt{ background:rgba(15,23,42,.35); border:1px solid rgba(148,163,184,.28); }
+.qm-flagopt-emoji{ min-width:76px; padding:0 10px; }
+.qm-flagopt:not(.qm-flagopt-emoji){ min-width:140px; }
+.qm-flagEmoji{ font-size:18px; line-height:1; display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; }
+
 .qm-item.flag-yellow{ border-left:6px solid #f1c40f; }
 .qm-item.flag-red{ border-left:6px solid #e74c3c; }
 .qm-flagbadge{ display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; margin-left:6px; border:1px solid #ddd; }
 .qm-flagbadge.yellow{ border-color:#f1c40f; }
 .qm-flagbadge.red{ border-color:#e74c3c; }
+
+
+
+.qm-item{ position:relative; }
+.qm-actions{ display:flex; gap:8px; justify-content:flex-end; align-items:center; margin-left:auto; }
+.qm-actbtn{
+  border:1px solid rgba(148,163,184,.28);
+  background:rgba(15,23,42,.35);
+  color:var(--text);
+  border-radius:10px;
+  padding:6px 10px;
+  font-size:12px;
+  line-height:1;
+}
+.qm-actbtn.danger{ border-color: rgba(231,76,60,.55); background:rgba(231,76,60,.12); }
+.qm-actrow{ display:flex; justify-content:space-between; gap:10px; align-items:center; }
 
 </style>
 </head>
@@ -458,8 +496,8 @@ mark{ padding:0 2px; border-radius:3px; }
     <div class="qm-flagbar" aria-label="重要度フラグ">
       
       <label class="qm-flagopt"><input type="radio" name="qmFlagRadio" value="none" checked=""><span>マークなし</span></label>
-      <label class="qm-flagopt"><input type="radio" name="qmFlagRadio" value="yellow"><span style="font-size:18px; line-height:1;">🟨</span></label>
-      <label class="qm-flagopt"><input type="radio" name="qmFlagRadio" value="red"><span style="font-size:18px; line-height:1;">🟥</span></label>
+      <label class="qm-flagopt qm-flagopt-emoji"><input type="radio" name="qmFlagRadio" value="yellow"><span class="qm-flagEmoji">🟨</span></label>
+      <label class="qm-flagopt qm-flagopt-emoji"><input type="radio" name="qmFlagRadio" value="red"><span class="qm-flagEmoji">🟥</span></label>
       <input type="hidden" id="qmFlag" value="none">
     </div>
 
@@ -516,7 +554,7 @@ mark{ padding:0 2px; border-radius:3px; }
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v13.10</div>
+    <div class="footerVer" id="footerVer">v13.12</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -565,7 +603,7 @@ mark{ padding:0 2px; border-radius:3px; }
 (() => {
   "use strict";
 
-  const APP_VERSION = "v13.10";
+  const APP_VERSION = "v13.12";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -1334,7 +1372,25 @@ function openRunEditModal(runId){
   }
   function bind(){
     // buttons
-    safeEl("btnReload")?.addEventListener("click", ()=>{ location.reload(); });
+    const btnReload = safeEl("btnReload");
+    if(btnReload){
+      btnReload.addEventListener("click", ()=>{ location.reload(); });
+
+      // 隠し：更新ボタン長押しで「メモ保守」を開く
+      let lpT = null;
+      const lpStart = (e)=>{
+        try{ e?.preventDefault?.(); }catch(_){ }
+        clearTimeout(lpT);
+        lpT = setTimeout(()=>{ window.__openQMMaint?.(); }, 800);
+      };
+      const lpEnd = ()=>{ clearTimeout(lpT); lpT=null; };
+      btnReload.addEventListener('touchstart', lpStart, {passive:false});
+      btnReload.addEventListener('touchend', lpEnd);
+      btnReload.addEventListener('touchcancel', lpEnd);
+      btnReload.addEventListener('mousedown', lpStart);
+      btnReload.addEventListener('mouseup', lpEnd);
+      btnReload.addEventListener('mouseleave', lpEnd);
+    }
     safeEl("btnAddRun")?.addEventListener("click", addRun);
     safeEl("btnToggleRunList")?.addEventListener("click", ()=>{
       runListOpen=!runListOpen;
@@ -1620,6 +1676,20 @@ function openRunEditModal(runId){
         qmOpen(id);
       });
     });
+
+    // bind action buttons (stop propagation)
+    list.querySelectorAll("[data-qmact]").forEach(btn=>{
+      btn.addEventListener("click", (ev)=>{
+        ev.stopPropagation();
+        const act=btn.getAttribute("data-qmact");
+        const id=btn.getAttribute("data-qmid");
+        if(act==="edit") return qmOpen(id);
+        if(act==="del"){
+          const ok = confirm("このメモを削除します。よろしいですか？");
+          if(ok) qmDeleteById(id);
+        }
+      });
+    });
   }
 
   function qmOpen(id){
@@ -1653,12 +1723,31 @@ function openRunEditModal(runId){
     qmEditingId = null;
   }
 
+  function qmUpdateMaintStats(){
+    const el = safeEl("qmMaintStats");
+    if(!el) return;
+    let bytes = 0;
+    let count = 0;
+    try{
+      const raw = localStorage.getItem(QM_KEY) || "[]";
+      bytes = new Blob([raw]).size;
+      const arr = JSON.parse(raw);
+      count = Array.isArray(arr) ? arr.length : 0;
+    }catch(_){ bytes = 0; count = 0; }
+    const kb = (bytes/1024).toFixed(1);
+    el.textContent = `登録: ${count}件 / データ: ${kb}KB（JSON概算）`;
+  }
+
   function qmMaintOpen(){
     const ov=safeEl("qmMaintOverlay");
     if(!ov) return;
+    qmUpdateMaintStats();
     ov.style.display="flex";
     ov.setAttribute("aria-hidden","false");
   }
+
+  // 外部（更新ボタン長押しなど）から開けるように
+  window.__openQMMaint = qmMaintOpen;
   function qmMaintClose(){
     const ov=safeEl("qmMaintOverlay");
     if(!ov) return;
@@ -1713,16 +1802,21 @@ function openRunEditModal(runId){
     qmClose();
   }
 
-  function qmDelete(){
-    if(!qmEditingId) return;
+  function qmDeleteById(id, {closeModal=false}={}){
+    if(!id) return;
     const arr=qmEnsureArray();
-    const idx=arr.findIndex(x=>x.id===qmEditingId);
+    const idx=arr.findIndex(x=>x.id===id);
     if(idx>=0) arr.splice(idx,1);
     markDirty();
     saveState(true);
     showToast("削除しました");
     qmRender();
-    qmClose();
+    if(closeModal) qmClose();
+  }
+
+  function qmDelete(){
+    if(!qmEditingId) return;
+    qmDeleteById(qmEditingId, {closeModal:true});
   }
 
   function qmExport(){

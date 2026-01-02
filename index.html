@@ -600,7 +600,7 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card" id="calendarCard">
 <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
 <button class="calBtn" id="calendarToggle" type="button">表示する</button>
-<div id="calendarWrap">
+<div id="calendarWrap" style="display: none;">
 <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
 <div class="calList" id="calendarList"></div>
 </div>
@@ -625,7 +625,7 @@ mark{ padding:0 2px; border-radius:3px; }
     <button class="btn-muted" id="btnQmExport">エクスポート</button>
     <button class="btn-muted" id="btnQmImport">インポート</button>
     <input type="file" id="qmImportFile" accept="application/json" style="display:none;">
-    <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;"></div>
+    <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;">登録件数：0件</div>
 
 </div>
 
@@ -689,8 +689,8 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card">
 <div class="center-title" style="font-size:16px;">オンライン</div>
 <div class="btn-row">
-<button class="btn-muted" id="btnOffline" type="button">オフライン</button>
-<button id="btnOnline" type="button">オンライン</button>
+<button class="" id="btnOffline" type="button">オフライン</button>
+<button id="btnOnline" type="button" class="btn-muted">オンライン</button>
 </div>
 <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
 </div>
@@ -705,7 +705,7 @@ mark{ padding:0 2px; border-radius:3px; }
 </div>
 <div class="footerBar">
   <div class="footerInner">
-    <div class="footerVer" id="footerVer">v13.456</div>
+    <div class="footerVer" id="footerVer">v13.4</div>
     <button class="btn-muted" id="btnReload" type="button">更新</button>
   </div>
 </div>
@@ -749,7 +749,7 @@ mark{ padding:0 2px; border-radius:3px; }
 (() => {
   "use strict";
 
-  const APP_VERSION = "v13.456";
+  const APP_VERSION = "v13.4";
   const STORE_KEY = "ddt_store_v12";
 const safeEl = (id) => {
     const n = document.getElementById(id);
@@ -1418,91 +1418,6 @@ function openRunEditModal(runId){
     ov.setAttribute("aria-hidden","false");
   }
 
-  // Online duration input via dropdowns (HH + MM).
-  const ov = safeEl("modalOverlay");
-  const ttl = safeEl("modalTitle");
-  const mm  = safeEl("modalMsg");
-  const acts= safeEl("modalActions");
-  if(!ov||!ttl||!mm||!acts) return;
-
-  ttl.textContent = dayKey ? `${fmtDayKey(dayKey)} オンライン時間` : "オンライン時間を入力";
-  dayBoundaryResetIfNeeded();
-
-  const baseMs = (dayKey && dayKey!==todayKey()) ? onlineMsForDay(dayKey) : currentOnlineMs();
-  const curMin = Math.floor((baseMs||0)/60000);
-  const curH = Math.min(24, Math.floor(curMin/60));
-  const curM = Math.min(59, curMin%60);
-
-  const hourOpts = Array.from({length:25},(_,i)=>`<option value="${i}" ${i===curH?'selected':''}>${i}時間</option>`).join("");
-  const minOpts = Array.from({length:61},(_,i)=>{
-    const label = (i===60) ? "60分" : `${i}分`;
-    const sel = (i===curM) ? 'selected' : '';
-    return `<option value="${i}" ${sel}>${label}</option>`;
-  }).join("");
-
-  mm.innerHTML = `
-    <div style="font-size:12px;color:rgba(226,232,240,.85);margin-bottom:8px;line-height:1.4;">
-      今日（4時〜）の <strong>オンライン時間そのもの</strong> を選択してね（1分刻み）
-    </div>
-    <div class="row" style="gap:8px;">
-      <div>
-        <div class="label">時間</div>
-        <select id="tmpDurH">${hourOpts}</select>
-      </div>
-      <div>
-        <div class="label">分</div>
-        <select id="tmpDurM">${minOpts}</select>
-      </div>
-    </div>
-  `;
-
-  populateMinutesSelect("tmpEditMinutes", run.minutes||20);
-
-  acts.innerHTML="";
-  const btnCancel=document.createElement("button");
-  btnCancel.textContent="キャンセル";
-  btnCancel.className="btn-muted";
-  btnCancel.addEventListener("click",()=>{
-    ov.classList.remove("show");
-    ov.setAttribute("aria-hidden","true");
-  });
-
-  const btnSave=document.createElement("button");
-  btnSave.textContent="反映";
-  btnSave.addEventListener("click",()=>{
-    const hh = toInt(safeEl("tmpDurH")?.value);
-    const mmv = toInt(safeEl("tmpDurM")?.value);
-
-    let totalMin = (hh*60) + mmv;
-    if(mmv===60) totalMin = (Math.min(24, hh+1)*60); // 60分は繰り上げ
-    totalMin = Math.max(0, Math.min(24*60, totalMin));
-
-    const durMs = totalMin * 60000;
-
-    if(dayKey && dayKey!==todayKey()){
-      if(!state.onlineByDay) state.onlineByDay = {};
-      state.onlineByDay[dayKey] = durMs;
-    }else{
-      state.online.isOn = false;
-      state.online.startAt = 0;
-      state.online.accumulatedMs = durMs;
-      state.online.lastKey = todayKey();
-      if(!state.onlineByDay) state.onlineByDay = {};
-      state.onlineByDay[todayKey()] = durMs;
-    }
-
-    ov.classList.remove("show");
-    ov.setAttribute("aria-hidden","true");
-    showToast("オンライン時間を反映した");
-    updateUI();
-  });
-
-  acts.appendChild(btnCancel);
-  acts.appendChild(btnSave);
-
-  ov.classList.add("show");
-  ov.setAttribute("aria-hidden","false");
-}
   // calendar
   let calendarOpen=!!state.calendarOpen;
   function setCalendarOpen(v){

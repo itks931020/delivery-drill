@@ -658,6 +658,7 @@ const safeEl = (id) => {
 
     memos:{}, // {dayKey: text}
     quickMemos:[], // [{id,title,body,createdAt,updatedAt}]
+    memoBlocks:[], // [{id,title,text,flag,createdAt,updatedAt,sourceId}]
     calendarOpen:false
   };
 
@@ -1526,6 +1527,78 @@ function openRunEditModal(runId){
   // ===== Quick Memos (端末内メモ) =====
   let qmEditingId = null;
 
+  // --- MemoBlocks helpers (断片化 + スニペット検索) ---
+  function qmMakeId(prefix="mb"){
+    const core = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (String(Date.now())+Math.random());
+    return `${prefix}_${core}`;
+  }
+  function qmNowISO(){ return new Date().toISOString(); }
+
+  function chunkMemoText(raw, opts={}){
+    const maxLen = Number(opts.maxLen||700);
+    if(raw==null) return [];
+    const text = String(raw).replace(/\r\n/g,"\n").trim();
+    if(!text) return [];
+
+    const paras = text.split(/\n{2,}/).map(s=>s.trim()).filter(Boolean);
+    const out=[];
+
+    const bulletLike = (s)=>/^([\-・\*]|\d+\.|[①-⑳]|[一二三四五六七八九十]+[\.、])\s*/.test(s);
+
+    function pushSplit(str){
+      const s=String(str).trim();
+      if(!s) return;
+      if(s.length<=maxLen){ out.push(s); return; }
+      let start=0;
+      while(start<s.length){
+        let end=Math.min(start+maxLen, s.length);
+        const slice=s.slice(start,end);
+        let cut=Math.max(
+          slice.lastIndexOf("。"),
+          slice.lastIndexOf("！"),
+          slice.lastIndexOf("？"),
+          slice.lastIndexOf("、"),
+          slice.lastIndexOf(" "),
+          slice.lastIndexOf("\n")
+        );
+        if(cut < Math.floor(maxLen*0.6)) cut = slice.length;
+        out.push(s.slice(start, start+cut).trim());
+        start = start+cut;
+      }
+    }
+
+    for(const p of paras){
+      const lines = p.split("\n").map(s=>s.trim()).filter(Boolean);
+      const bulletCount = lines.filter(bulletLike).length;
+      if(lines.length>=3 && bulletCount>=Math.ceil(lines.length*0.5)){
+        for(const line of lines) pushSplit(line);
+      }else{
+        pushSplit(p);
+      }
+    }
+    return out.filter(Boolean);
+  }
+
+  function escapeRegExp(str){
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function snippetAround(text, q, radius=90){
+    const s=String(text||"");
+    const query=String(q||"").trim();
+    if(!query) return s.slice(0, Math.min(220, s.length));
+    const re=new RegExp(escapeRegExp(query), "i");
+    const m=re.exec(s);
+    if(!m) return s.slice(0, Math.min(220, s.length));
+    const idx=m.index;
+    const start=Math.max(0, idx-radius);
+    const end=Math.min(s.length, idx+query.length+radius);
+    const head = start>0 ? "…" : "";
+    const tail = end<s.length ? "…" : "";
+    return head + s.slice(start,end).trim() + tail;
+  }
+
+
   function qmSetFlag(flag){
     const f=(flag||"none");
     const hid=safeEl("qmFlag"); if(hid) hid.value=f;
@@ -1541,16 +1614,50 @@ function openRunEditModal(runId){
 
 
   function qmEnsureArray(){
-    if(!state.quickMemos || !Array.isArray(state.quickMemos)) state.quickMemos = [];
-    // migrate
-    try{
-      state.quickMemos.forEach(it=>{
-        if(!it) return;
-        if(!it.id) it.id = "qm_" + qmNow() + "_" + Math.random().toString(16).slice(2);
-        if(!("flag" in it)) it.flag = "none";
-      });
-    }catch(e){}
-    return state.quickMemos;
+    // 新方式：memoBlocks（断片）を検索対象にする
+    if(!state.memoBlocks || !Array.isArray(state.memoBlocks)){
+      state.memoBlocks = [];
+    }
+
+    // 旧 quickMemos が残っていて、まだ memoBlocks が空なら移行（1回だけ）
+    if((state.memoBlocks.length===0) && state.quickMemos && Array.isArray(state.quickMemos) && state.quickMemos.length){
+      try{
+        const migrated=[];
+        for(const m of state.quickMemos){
+          const srcId = m?.id || qmMakeId("ms");
+          const title = String(m?.title||"").trim() || "(無題)";
+          const body  = String(m?.body||"").trim();
+          const chunks = chunkMemoText(body);
+          if(chunks.length){
+            for(const ch of chunks){
+              migrated.push({
+                id: qmMakeId("mb"),
+                sourceId: srcId,
+                title,
+                text: ch,
+                flag: "none",
+                createdAt: m?.createdAt || qmNowISO(),
+                updatedAt: m?.updatedAt || qmNowISO(),
+              });
+            }
+          }else{
+            migrated.push({
+              id: qmMakeId("mb"),
+              sourceId: srcId,
+              title,
+              text: body || "",
+              flag: "none",
+              createdAt: m?.createdAt || qmNowISO(),
+              updatedAt: m?.updatedAt || qmNowISO(),
+            });
+          }
+        }
+        state.memoBlocks = migrated;
+        // quickMemos は残しておく（バックアップ互換）けど、以降UIは memoBlocks を使う
+        persistState();
+      }catch(e){}
+    }
+    return state.memoBlocks;
   }
   function qmNow(){ return Date.now(); }
   function qmFmt(ts){
@@ -1625,21 +1732,24 @@ function openRunEditModal(runId){
 
     const box=safeEl("qmSearch");
     const q=(box?.value || "").trim();
+    const qLower = q.toLowerCase();
 
-    // 未入力時は一覧を出さない（200件でも画面が埋まらない）
+    // 未入力時は一覧を出さない（画面が埋まらない）
     if(!q){
       list.innerHTML = `<div class="subtitle" style="text-align:center; padding:10px;">検索ワードを入力してください</div>`;
       return;
     }
 
-    const arr=qmEnsureArray().slice().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+    const arr = qmEnsureArray()
+      .slice()
+      .sort((a,b)=> (Date.parse(b.updatedAt||b.createdAt||0)||0) - (Date.parse(a.updatedAt||a.createdAt||0)||0));
+
     const filtered = arr.filter(it=>{
-      const hay = (it.title||"") + "\n" + (it.body||"");
-      return hay.includes(q);
+      const hay = ((it.title||"") + "\n" + (it.text||"")).toLowerCase();
+      return hay.includes(qLower);
     });
 
-    // 返しすぎると重いので上限
-    const LIMIT = 120;
+    const LIMIT = 200;
     const limited = filtered.slice(0, LIMIT);
 
     if(!limited.length){
@@ -1649,14 +1759,15 @@ function openRunEditModal(runId){
 
     list.innerHTML = limited.map(it=>{
       const title = it.title ? qmHighlight(it.title, q) : "（無題）";
-      const body = it.body || "";
-      const snippetRaw = body.length>220 ? (body.slice(0,220) + "…") : body;
+      const snippetRaw = snippetAround(it.text||"", q, 100);
       const snippet = qmHighlight(snippetRaw, q);
       const meta = qmFmt(it.updatedAt||it.createdAt||0);
 
       const f = (it.flag||"none");
       const flagClass = (f==="yellow") ? "flag-yellow" : (f==="red") ? "flag-red" : "";
-      const badge = (f==="yellow") ? `<span class="qm-flagbadge yellow">🟨注意</span>` : (f==="red") ? `<span class="qm-flagbadge red">🟥危険</span>` : ``;
+      const badge = (f==="yellow") ? `<span class="qm-flagbadge yellow">🟨注意</span>`
+                 : (f==="red") ? `<span class="qm-flagbadge red">🟥危険</span>`
+                 : ``;
 
       return `
         <div class="qm-item ${flagClass}" data-qmid="${qmEscape(it.id)}">
@@ -1672,22 +1783,8 @@ function openRunEditModal(runId){
     // bind item clicks
     list.querySelectorAll(".qm-item").forEach(el=>{
       el.addEventListener("click", ()=>{
-        const id=el.getAttribute("data-qmid");
+        const id = el.getAttribute("data-qmid");
         qmOpen(id);
-      });
-    });
-
-    // bind action buttons (stop propagation)
-    list.querySelectorAll("[data-qmact]").forEach(btn=>{
-      btn.addEventListener("click", (ev)=>{
-        ev.stopPropagation();
-        const act=btn.getAttribute("data-qmact");
-        const id=btn.getAttribute("data-qmid");
-        if(act==="edit") return qmOpen(id);
-        if(act==="del"){
-          const ok = confirm("このメモを削除します。よろしいですか？");
-          if(ok) qmDeleteById(id);
-        }
       });
     });
   }
@@ -1695,6 +1792,7 @@ function openRunEditModal(runId){
   function qmOpen(id){
     const ov=safeEl("qmOverlay");
     if(!ov) return;
+
     const arr=qmEnsureArray();
     const it = arr.find(x=>x.id===id) || null;
     qmEditingId = it ? it.id : null;
@@ -1705,14 +1803,16 @@ function openRunEditModal(runId){
     const modalTitle=safeEl("qmModalTitle");
 
     if(titleBox) titleBox.value = it ? (it.title||"") : "";
-    if(bodyBox) bodyBox.value = it ? (it.body||"") : "";
+    if(bodyBox) bodyBox.value = it ? (it.text||"") : "";
     qmSetFlag(it ? (it.flag||"none") : "none");
 
-    if(delBtn) delBtn.style.display = it ? "inline-block" : "none";
-    if(modalTitle) modalTitle.textContent = it ? "メモ編集" : "メモ追加";
+    if(delBtn) delBtn.style.display = it ? "inline-flex" : "none";
+    if(modalTitle){
+      modalTitle.textContent = it ? "メモ断片を編集" : "メモを追加";
+    }
 
     ov.style.display="flex";
-    ov.setAttribute("aria-hidden","false");
+    setTimeout(()=>{ bodyBox?.focus(); }, 0);
   }
 
   function qmClose(){
@@ -1773,33 +1873,62 @@ function openRunEditModal(runId){
 
 
   function qmSave(){
-    const title=(safeEl("qmTitle")?.value || "").trim();
-    const body=(safeEl("qmBody")?.value || "").trim();
-    const flag=(safeEl("qmFlag")?.value || "none").trim();
-    if(!body && !title){
-      showToast("空なので保存しません");
+    const title = (safeEl("qmTitle")?.value || "").trim() || "(無題)";
+    const body  = (safeEl("qmBody")?.value  || "").trim();
+
+    const blocks = qmEnsureArray();
+
+    if(qmEditingId){
+      const it = blocks.find(x=>x.id===qmEditingId);
+      if(!it){ showToast("対象が見つからない"); return; }
+      it.title = title;
+      it.text  = body;
+      it.updatedAt = qmNowISO();
+      persistState();
+      qmEditingId=null;
+      qmCloseModal();
+      qmRender();
+      showToast("更新しました");
       return;
     }
-    const arr=qmEnsureArray();
-    const now=qmNow();
-    if(qmEditingId){
-      const it=arr.find(x=>x.id===qmEditingId);
-      if(it){
-        it.title=title;
-        it.body=body;
-        it.flag=flag;
-        it.updatedAt=now;
-      }
-      showToast("保存しました");
-    }else{
-      const id = "qm_" + now + "_" + Math.random().toString(16).slice(2);
-      arr.push({id, title, body, flag, createdAt: now, updatedAt: now});
-      showToast("追加しました");
+
+    if(!body){
+      showToast("本文が空だよ");
+      return;
     }
-    markDirty();
-    saveState(true);
+
+    const sourceId = qmMakeId("ms");
+    const createdAt = qmNowISO();
+    const updatedAt = createdAt;
+
+    const chunks = chunkMemoText(body);
+    const items = (chunks.length ? chunks : [body]);
+
+    // 追加は常に先頭（上に積む）＆ 元の並びを維持
+    for(let i=items.length-1; i>=0; i--){
+      blocks.unshift({
+        id: qmMakeId("mb"),
+        sourceId,
+        title,
+        text: items[i],
+        flag: "none",
+        createdAt,
+        updatedAt
+      });
+    }
+
+    // 互換バックアップ用に raw も残す（表示には使わない）
+    try{
+      if(!state.quickMemos || !Array.isArray(state.quickMemos)) state.quickMemos=[];
+      state.quickMemos.unshift({ id: sourceId, title, body, createdAt, updatedAt });
+    }catch(e){}
+
+    persistState();
+    safeEl("qmTitle").value="";
+    safeEl("qmBody").value="";
+    qmUpdateVisibility();
     qmRender();
-    qmClose();
+    showToast(items.length>1 ? `取り込み完了（${items.length}断片）` : "追加しました");
   }
 
   function qmDeleteById(id, {closeModal=false}={}){

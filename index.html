@@ -189,6 +189,28 @@ button:active{transform:translateY(1px)}
   margin-top:6px;
 }
 
+.platformPick{ grid-column:1/-1; }
+.platformRadios{ display:flex; gap:6px; flex-wrap:wrap; margin-top:4px; }
+.radioChip{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 10px; border-radius:12px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.14);
+  font-size:13px; font-weight:800;
+  user-select:none;
+}
+.radioChip input{ transform:scale(1.05); }
+
+
+.pill{
+  display:inline-flex; align-items:center;
+  padding:2px 8px; border-radius:999px;
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.18);
+  font-size:11px; font-weight:900;
+  margin-left:6px;
+}
+
 /* footer reload */
 .footerBar{
   position:fixed;
@@ -416,7 +438,15 @@ mark{ padding:0 2px; border-radius:3px; }
 
     <div>
       <div class="label">時間（分）</div>
-      <select id="inputMinutes"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20" selected="">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option><option value="60">60</option><option value="61">61</option><option value="62">62</option><option value="63">63</option><option value="64">64</option><option value="65">65</option><option value="66">66</option><option value="67">67</option><option value="68">68</option><option value="69">69</option><option value="70">70</option><option value="71">71</option><option value="72">72</option><option value="73">73</option><option value="74">74</option><option value="75">75</option><option value="76">76</option><option value="77">77</option><option value="78">78</option><option value="79">79</option><option value="80">80</option><option value="81">81</option><option value="82">82</option><option value="83">83</option><option value="84">84</option><option value="85">85</option><option value="86">86</option><option value="87">87</option><option value="88">88</option><option value="89">89</option><option value="90">90</option><option value="91">91</option><option value="92">92</option><option value="93">93</option><option value="94">94</option><option value="95">95</option><option value="96">96</option><option value="97">97</option><option value="98">98</option><option value="99">99</option><option value="100">100</option><option value="101">101</option><option value="102">102</option><option value="103">103</option><option value="104">104</option><option value="105">105</option><option value="106">106</option><option value="107">107</option><option value="108">108</option><option value="109">109</option><option value="110">110</option><option value="111">111</option><option value="112">112</option><option value="113">113</option><option value="114">114</option><option value="115">115</option><option value="116">116</option><option value="117">117</option><option value="118">118</option><option value="119">119</option><option value="120">120</option></select>
+      <select id="inputMinutes"></select>
+    </div>
+    <div class="platformPick">
+      <div class="label">配達アプリ</div>
+      <div class="platformRadios" role="radiogroup" aria-label="配達アプリ">
+        <label class="radioChip"><input type="radio" name="deliveryPlatform" value="uber" checked=""> Uber</label>
+        <label class="radioChip"><input type="radio" name="deliveryPlatform" value="demaecan"> 出前館</label>
+        <label class="radioChip"><input type="radio" name="deliveryPlatform" value="rocketnow"> ロケットNow</label>
+      </div>
     </div>
   </div>
 
@@ -449,7 +479,7 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card" id="calendarCard">
 <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
 <button class="calBtn" id="calendarToggle" type="button">表示する</button>
-<div id="calendarWrap" style="display: none;">
+<div id="calendarWrap">
 <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
 <div class="calList" id="calendarList"></div>
 </div>
@@ -474,7 +504,7 @@ mark{ padding:0 2px; border-radius:3px; }
     <button class="btn-muted" id="btnQmExport">エクスポート</button>
     <button class="btn-muted" id="btnQmImport">インポート</button>
     <input type="file" id="qmImportFile" accept="application/json" style="display:none;">
-    <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;">登録件数：0件</div>
+    <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;"></div>
 
 </div>
 
@@ -538,8 +568,8 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card">
 <div class="center-title" style="font-size:16px;">オンライン</div>
 <div class="btn-row">
-<button class="" id="btnOffline" type="button">オフライン</button>
-<button id="btnOnline" type="button" class="btn-muted">オンライン</button>
+<button class="btn-muted" id="btnOffline" type="button">オフライン</button>
+<button id="btnOnline" type="button">オンライン</button>
 </div>
 <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
 </div>
@@ -593,11 +623,6 @@ mark{ padding:0 2px; border-radius:3px; }
       <button class="btn-muted" id="btnQmMaintExport">エクスポート</button>
       <button class="btn-muted" id="btnQmMaintImport">インポート</button>
     </div>
-    <button class="btn-danger" id="btnQmResetAllMemos" style="width:100%; margin-top:10px;">全メモを削除</button>
-    <button class="btn-muted" id="btnQmMaintClose" style="width:100%; margin-top:10px;">閉じる</button>
-  </div>
-</div>
-
 <script>
 
 (() => {
@@ -630,6 +655,14 @@ const safeEl = (id) => {
   }
 
   const fmtYen=(n)=>String(Math.max(0,Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+
+  const platformLabel=(p)=>{
+    switch(String(p||'uber')){
+      case 'demaecan': return '出前館';
+      case 'rocketnow': return 'ロケットNow';
+      default: return 'Uber';
+    }
+  };
 
   function businessDayKey(ts=Date.now()){
     const d=new Date(ts); d.setMinutes(d.getMinutes()-240);
@@ -797,7 +830,12 @@ function closeDeliveryCompletePopup(){
     const count=runs.reduce((a,r)=>a+(r.count||0),0);
     const workMinutes=runs.reduce((a,r)=>a+(r.minutes||0),0);
     const cashSum=runs.reduce((a,r)=>a+(r.cashCollected||0),0);
-    return {sales,count,workMs:workMinutes*60000,questSum,cashSum};
+    const byPlatform=runs.reduce((o,r)=>{
+      const p=r.platform||'uber';
+      o[p]=(o[p]||0)+(r.count||0);
+      return o;
+    },{});
+    return {sales,count,workMs:workMinutes*60000,questSum,cashSum,byPlatform};
   }
 
   function onlineMsForDay(dayKey){
@@ -835,7 +873,7 @@ function closeDeliveryCompletePopup(){
     const id=escapeHtml(r.id);
     return `<div class="runitem" data-runid="${id}">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;">
-        <div><strong>¥${fmtYen(r.amount)}</strong> / ${r.minutes}分 / ${r.count||1}件</div>
+        <div><strong>¥${fmtYen(r.amount)}</strong> / ${r.minutes}分 / ${r.count||1}件 <span class="pill">${platformLabel(r.platform)}</span></div>
         <button type="button" class="btn-muted" data-edit="${id}" style="padding:8px 12px;font-weight:950;">修正</button>
       </div>
       <div class="small">時給換算：¥${fmtYen(wage)}/h　現金代引き：¥${fmtYen(r.cashCollected||0)}</div>
@@ -875,6 +913,14 @@ function openRunEditModal(runId){
         <select id="tmpEditMinutes"></select>
       </div>
     </div>
+    <div style="margin-top:8px;">
+      <div class="label">配達アプリ</div>
+      <select id="tmpEditPlatform">
+        <option value="uber">Uber</option>
+        <option value="demaecan">出前館</option>
+        <option value="rocketnow">ロケットNow</option>
+      </select>
+    </div>
     <div class="row" style="gap:8px;margin-top:8px;">
       <div>
         <div class="label">金額（円）</div>
@@ -891,6 +937,8 @@ function openRunEditModal(runId){
   `;
 
   populateMinutesSelect("tmpEditMinutes", run.minutes||20);
+  const platSel = safeEl("tmpEditPlatform");
+  if(platSel) platSel.value = String(run.platform||"uber");
 
   acts.innerHTML="";
   const btnCancel=document.createElement("button");
@@ -915,6 +963,8 @@ function openRunEditModal(runId){
     run.minutes = minutes;
     run.amount = amount;
     run.cashCollected = cashCollected;
+    const p = (safeEl("tmpEditPlatform")||{}).value || (run.platform||"uber");
+    run.platform = p;
 
     ov.classList.remove("show");
     ov.setAttribute("aria-hidden","true");
@@ -965,7 +1015,8 @@ function openRunEditModal(runId){
     // id generation safe
     const id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now())+Math.random();
 
-    state.runsLog.push({id,ts:Date.now(),minutes,amount,cashCollected,count});
+    const platform = (document.querySelector('input[name="deliveryPlatform"]:checked')||{}).value || "uber";
+    state.runsLog.push({id,ts:Date.now(),minutes,amount,cashCollected,count,platform});
     if(safeEl("inputMinutes")) safeEl("inputMinutes").value="20";
     if(safeEl("inputAmount")) safeEl("inputAmount").value="";
     if(safeEl("inputCashCollected")) safeEl("inputCashCollected").value="";
@@ -1255,6 +1306,8 @@ function openRunEditModal(runId){
       const workH = (t.workMs||0)/3600000;
       const workW = workH>0 ? Math.floor(t.sales/workH) : 0;
       const memo = (state.memos && state.memos[k]) ? state.memos[k] : "";
+      const bp=t.byPlatform||{};
+      const platformLine = `Uber:${bp.uber||0} / 出前館:${bp.demaecan||0} / ロケットNow:${bp.rocketnow||0}`;
       return `<div class="calDay" data-day="${k}">
         <div class="calHead">
           <div class="calDate">${fmtDayKey(k)}</div>
@@ -1264,6 +1317,7 @@ function openRunEditModal(runId){
             <span>オンライン時給換算: ¥${fmtYen(onlineW)}/h</span>
             <span>現金: ¥${fmtYen(t.cashSum)}</span>
           </div>
+          <div class="small" style="margin-top:4px;">${platformLine}</div>
         </div>
         <div class="calMemo">${memo ? "メモ："+escapeHtml(memo) : "メモ：（なし）"}</div>
         <div class="calDetails">
@@ -2101,7 +2155,15 @@ function init(){
 
 })();
 
+eryFromURL(); setTimeout(()=>qmApplyQueryFromURL(), 80); });
+  document.addEventListener("visibilitychange", () => {
+    if(!document.hidden){ qmApplyQueryFromURL(); setTimeout(()=>qmApplyQueryFromURL(), 80); }
+  });
+
+
+})();
+
 </script>
 
 
-</body></html>
+</div></div></body></html>

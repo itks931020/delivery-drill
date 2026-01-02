@@ -600,7 +600,7 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card" id="calendarCard">
 <div class="center-title" id="calendarTitle" style="font-size:16px;cursor:pointer;">売上カレンダー</div>
 <button class="calBtn" id="calendarToggle" type="button">表示する</button>
-<div id="calendarWrap">
+<div id="calendarWrap" style="display: none;">
 <div class="sub" style="margin:0 0 6px;">日別：売上/時間/件数/時給/現金代引き/クエスト ＋ メモ</div>
 <div class="calList" id="calendarList"></div>
 </div>
@@ -625,7 +625,7 @@ mark{ padding:0 2px; border-radius:3px; }
     <button class="btn-muted" id="btnQmExport">エクスポート</button>
     <button class="btn-muted" id="btnQmImport">インポート</button>
     <input type="file" id="qmImportFile" accept="application/json" style="display:none;">
-    <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;"></div>
+    <div id="qmCount" class="sub" style="text-align:center; margin:6px 0 0; display:block;">登録件数：0件</div>
 
 </div>
 
@@ -689,8 +689,8 @@ mark{ padding:0 2px; border-radius:3px; }
 <div class="card">
 <div class="center-title" style="font-size:16px;">オンライン</div>
 <div class="btn-row">
-<button class="btn-muted" id="btnOffline" type="button">オフライン</button>
-<button id="btnOnline" type="button">オンライン</button>
+<button class="" id="btnOffline" type="button">オフライン</button>
+<button id="btnOnline" type="button" class="btn-muted">オンライン</button>
 </div>
 <div class="sub" id="onlineState" style="margin:6px 0 0;text-align:center;display:none;">オンライン中</div>
 </div>
@@ -2274,16 +2274,7 @@ function init(){
   });
 
 
-})();
-
-eryFromURL(); setTimeout(()=>qmApplyQueryFromURL(), 80); });
-  document.addEventListener("visibilitychange", () => {
-    if(!document.hidden){ qmApplyQueryFromURL(); setTimeout(()=>qmApplyQueryFromURL(), 80); }
-  });
-
-
-})();
-
+})()
 </script>
 
 

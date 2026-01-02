@@ -925,7 +925,15 @@ function closeDeliveryCompletePopup(){
     ov.classList.add("show");
     ov.setAttribute("aria-hidden","false");
   }
-  function dayBoundaryResetIfNeeded(){
+  
+  function closeModal(){
+    const ov = safeEl("modalOverlay");
+    if(!ov) return;
+    ov.classList.remove("show");
+    ov.setAttribute("aria-hidden","true");
+  }
+
+function dayBoundaryResetIfNeeded(){
     const key=todayKey();
     const prevKey = state.online.lastKey || key;
     if(prevKey !== key){
